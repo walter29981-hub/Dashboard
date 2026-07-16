@@ -1,0 +1,3033 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Impresoras Lexmark</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --navy:#1a2340; --navy2:#1e2d4f; --navy3:#243460;
+  --amber:#f59e0b; --amber2:#fbbf24;
+  --green:#10b981; --green2:#059669;
+  --blue:#3b82f6; --purple:#8b5cf6; --red:#ef4444;
+  --bg:#f0f2f8; --card:#fff;
+  --text:#1e293b; --text2:#64748b; --text3:#94a3b8;
+  --border:#e2e8f0; --border2:#f1f5f9;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow2:0 4px 16px rgba(0,0,0,.08);
+}
+body.dark {
+  --bg:#0f172a; --card:#1e293b;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#475569;
+  --border:#334155; --border2:#1e293b;
+  --shadow:0 1px 3px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.2);
+  --shadow2:0 4px 16px rgba(0,0,0,.4);
+}
+body.dark .topbar{background:#1e293b;}
+body.dark .filter-bar{background:#1e293b;}
+body.dark .filter-bar select{background:#0f172a;color:#e2e8f0;border-color:#334155;}
+body.dark .tchip{background:#0f172a;color:#94a3b8;border-color:#334155;}
+body.dark .c-card, body.dark .trend-card { background:#1e293b; }
+body.dark .kpi-card { background:#1e293b; }
+body.dark .kpi-card .kpi-icon { background:#0f172a !important; }
+body.dark table thead tr { background:#0f172a; }
+body.dark table th { color:#64748b; border-color:#334155; }
+body.dark table td { border-color:#1e293b; color:#cbd5e1; }
+body.dark tbody tr:hover td { background:#1e3a5f; }
+body.dark .table-toolbar input, body.dark .table-toolbar select { background:#0f172a; color:#e2e8f0; border-color:#334155; }
+body.dark .section-header::after { background:#334155; }
+body.dark .section-header h3 { color:#e2e8f0; }
+body.dark .c-card-header { border-bottom-color:#334155; }
+body.dark .c-card h2, body.dark .c-card-title { color:#e2e8f0; }
+body.dark .c-badge { background:#0f172a; color:#94a3b8; }
+body.dark .c-tab { background:#0f172a; color:#94a3b8; }
+body.dark .c-tab.active { background:#3b82f6; color:#fff; }
+body.dark .progress-bg, body.dark .bar-bg { background:#0f172a; }
+body.dark .td-name { color:#93c5fd; }
+body.dark .td-sub { color:#64748b; }
+body.dark .td-cost { color:#e2e8f0; }
+body.dark .no-data-msg { color:#475569; }
+body.dark .dash-footer { background:#0f172a; border-color:#1e293b; color:#475569; }
+body.dark .period-summary { color:#64748b; }
+body.dark .filter-count { background:#0f172a; color:#64748b; }
+body.dark .btn-reset { color:#64748b; border-color:#334155; }
+body.dark .btn-reset:hover { color:#ef4444; border-color:#ef4444; }
+body.dark .topbar-title { color:#e2e8f0; }
+body.dark .topbar-subtitle { color:#64748b; }
+body.dark .topbar-divider { background:#334155; }
+body.dark .btn-back { border-color:#334155; color:#94a3b8; }
+body.dark .rank-badge { border-color:#334155; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── UPLOAD ── */
+#upload-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);}
+.upload-card{background:#fff;border-radius:20px;padding:48px 44px;max-width:520px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.3);}
+.upload-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;}
+.upload-logo .logo-icon{width:52px;height:52px;background:var(--navy);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;}
+.upload-logo h1{font-size:22px;font-weight:700;color:var(--navy);}
+.upload-logo h1 span{color:var(--amber);}
+.upload-sub{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.6;}
+.drop-zone{border:2px dashed #c7d2fe;border-radius:14px;padding:32px 20px;background:#f8faff;cursor:pointer;transition:all .2s;margin-bottom:20px;position:relative;}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--navy);background:#eef0fb;transform:scale(1.01);}
+.drop-zone input{display:none;}
+.drop-zone .dz-icon{font-size:36px;margin-bottom:10px;}
+.drop-zone label{cursor:pointer;font-size:13px;color:var(--text2);display:block;}
+.drop-zone label strong{color:var(--navy);text-decoration:underline;}
+.sheets-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.sheet-card{background:#f8faff;border:1px solid #dbeafe;border-radius:10px;padding:10px 8px;text-align:center;}
+.sheet-card .sc-dot{width:10px;height:10px;border-radius:50%;margin:0 auto 6px;}
+.sheet-card .sc-name{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:2px;}
+.sheet-card .sc-desc{font-size:10px;color:var(--text2);line-height:1.3;}
+.error-msg{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;display:none;margin-top:8px;text-align:left;}
+
+/* ── LAYOUT ── */
+#dashboard{display:none;}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  position:fixed;top:0;left:0;width:220px;height:100vh;
+  background:var(--navy);display:flex;flex-direction:column;z-index:100;
+  transition:width .2s;overflow:hidden;
+}
+#sidebar.collapsed{width:60px;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;min-width:220px;}
+.sidebar-logo .sl-icon{width:36px;height:36px;background:var(--amber);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sidebar-logo .sl-text h2{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;}
+.sidebar-logo .sl-text p{font-size:10px;color:var(--text3);white-space:nowrap;}
+.sidebar-section{padding:16px 12px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);white-space:nowrap;overflow:hidden;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:8px;margin:2px 8px;transition:all .15s;white-space:nowrap;}
+.nav-item:hover{background:rgba(255,255,255,.08);}
+.nav-item.active{background:rgba(59,130,246,.25);border-left:3px solid var(--blue);}
+.nav-item .ni-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center;}
+.nav-item .ni-label{font-size:12px;color:#cbd5e1;overflow:hidden;}
+.nav-item.active .ni-label{color:#fff;font-weight:600;}
+.sidebar-bottom{margin-top:auto;padding:12px 8px;border-top:1px solid rgba(255,255,255,.08);}
+.btn-collapse{width:100%;background:none;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px;cursor:pointer;color:var(--text3);font-size:12px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.btn-collapse:hover{background:rgba(255,255,255,.08);color:#fff;}
+
+/* ── MAIN CONTENT ── */
+#main{margin-left:220px;transition:margin-left .2s;min-height:100vh;display:flex;flex-direction:column;}
+#sidebar.collapsed ~ #main{margin-left:60px;}
+
+/* ── TOP BAR ── */
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;gap:14px;height:58px;position:sticky;top:0;z-index:90;box-shadow:var(--shadow);}
+.topbar-title{font-size:15px;font-weight:700;color:var(--navy);}
+.topbar-subtitle{font-size:12px;color:var(--text2);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.btn-save{background:var(--green);border:none;border-radius:8px;padding:7px 16px;font-size:12px;color:#fff;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .15s;}
+.btn-save:hover{background:var(--green2);transform:translateY(-1px);}
+.btn-save:disabled{background:var(--text2);cursor:not-allowed;transform:none;}
+.btn-back{background:none;border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit;transition:all .15s;}
+.btn-back:hover{border-color:var(--navy);color:var(--navy);}
+.topbar-divider{width:1px;height:28px;background:var(--border);}
+.live-badge{background:#dcfce7;color:#166534;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:flex;align-items:center;gap:4px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes alertpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PERIOD FILTER ── */
+/* ── HYBRID FILTER BAR ── */
+.unified-bar{background:var(--navy2);padding:10px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.06);}
+.uf-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#475569;font-weight:700;white-space:nowrap;}
+.uf-divider{width:1px;height:22px;background:rgba(255,255,255,.1);flex-shrink:0;}
+/* Year dropdown */
+.uf-select{
+  appearance:none;-webkit-appearance:none;
+  background:rgba(255,255,255,.07) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E") no-repeat right 10px center;
+  border:1.5px solid rgba(255,255,255,.15);border-radius:8px;
+  padding:5px 30px 5px 11px;font-size:12px;font-weight:600;color:#e2e8f0;
+  cursor:pointer;font-family:inherit;outline:none;transition:all .15s;min-width:90px;
+}
+.uf-select:hover{border-color:rgba(255,255,255,.3);}
+.uf-select.active-year{background-color:rgba(59,130,246,.3);border-color:#3b82f6;color:#93c5fd;}
+.uf-select option{background:#1e2d4f;color:#e2e8f0;}
+/* Month + type chips */
+.mchip{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:var(--text3);transition:all .15s;}
+.mchip:hover{border-color:rgba(255,255,255,.3);color:#fff;}
+.mchip.active{background:var(--amber);color:#fff;border-color:var(--amber);}
+.uf-tchip{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#94a3b8;transition:all .15s;}
+.uf-tchip:hover{border-color:rgba(255,255,255,.3);color:#fff;}
+.uf-tchip.active{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4);}
+.uf-tchip.clr.active{background:rgba(245,158,11,.25);border-color:#f59e0b;color:#fcd34d;}
+.uf-tchip.bw.active{background:rgba(71,85,105,.4);border-color:#94a3b8;color:#fff;}
+/* Right side */
+.uf-badge{margin-left:auto;font-size:11px;color:#475569;background:rgba(255,255,255,.05);padding:4px 12px;border-radius:20px;white-space:nowrap;}
+.uf-reset{background:none;border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:5px 10px;font-size:11px;color:#64748b;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.uf-reset:hover{border-color:rgba(239,68,68,.5);color:#f87171;}
+.period-summary{display:none;}
+/* Filter bar (dept/model) */
+.filter-bar{background:#fff;border-bottom:1px solid var(--border);padding:9px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.fl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:700;white-space:nowrap;}
+.filter-bar select{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);font-family:inherit;background:#fff;outline:none;cursor:pointer;transition:border .15s;}
+.filter-bar select:focus{border-color:var(--blue);}
+.tchip{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--text2);transition:all .15s;}
+.tchip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.tchip.clr.active{background:var(--amber);border-color:var(--amber);color:#fff;}
+.tchip.bw.active{background:#475569;border-color:#475569;color:#fff;}
+.btn-reset{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--text2);cursor:pointer;font-family:inherit;margin-left:auto;transition:all .15s;}
+.btn-reset:hover{border-color:var(--red);color:var(--red);}
+.filter-count{font-size:11px;color:var(--text2);background:var(--border2);padding:4px 10px;border-radius:20px;white-space:nowrap;}
+
+/* ── FILTER BAR ── */
+/* filter-bar replaced by unified-bar above */
+.filter-bar{display:none;}
+
+/* ── PAGE SECTIONS ── */
+.page-section{padding:20px 28px 0;}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.section-header h3{font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;}
+.section-header::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── KPIs ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;padding:20px 28px 0;}
+.kpi-card{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:12px 0 0 12px;}
+.kpi-card.bw::before{background:var(--navy);}
+.kpi-card.clr::before{background:var(--amber);}
+.kpi-card.cost::before{background:var(--green);}
+.kpi-card.eq::before{background:var(--purple);}
+.kpi-card.total::before{background:var(--red);}
+.kpi-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;}
+.kpi-card.bw .kpi-icon{background:#f1f5f9;}
+.kpi-card.clr .kpi-icon{background:#fffbeb;}
+.kpi-card.cost .kpi-icon{background:#f0fdf4;}
+.kpi-card.eq .kpi-icon{background:#f5f3ff;}
+.kpi-card.total .kpi-icon{background:#fef2f2;}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:600;margin-bottom:4px;}
+.kpi-val{font-size:24px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:4px;}
+.kpi-sub{font-size:11px;color:var(--text3);}
+.kpi-trend{position:absolute;top:14px;right:14px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.kpi-trend.up{background:#dcfce7;color:#166534;}
+.kpi-trend.neutral{background:#f1f5f9;color:var(--text2);}
+
+/* ── CARDS / CHARTS ── */
+.chart-grid{display:grid;gap:16px;padding:16px 28px 0;}
+.chart-grid.cols2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
+.chart-grid.cols3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+.chart-grid.main{grid-template-columns:2fr 1fr;}
+.c-card{background:var(--card);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+.c-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border2);}
+.c-card-title{font-size:13px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px;}
+.c-card-title .ct-icon{font-size:15px;}
+.c-badge{font-size:10px;font-weight:700;background:var(--border2);color:var(--text2);padding:2px 8px;border-radius:20px;}
+.c-tabs{display:flex;gap:4px;}
+.c-tab{background:var(--border2);border:none;border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;color:var(--text2);font-family:inherit;font-weight:600;transition:all .15s;}
+.c-tab.active{background:var(--navy);color:#fff;}
+.chart-wrap{position:relative;width:100%;}
+.no-data-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;color:var(--text3);font-size:13px;gap:8px;}
+.no-data-msg .nd-icon{font-size:32px;opacity:.4;}
+
+/* ── DONUT CARD ── */
+.donut-legend{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.donut-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+.donut-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.donut-pct{margin-left:auto;font-weight:700;font-size:13px;color:var(--navy);}
+.donut-cost-section{margin-top:14px;padding-top:12px;border-top:1px solid var(--border2);}
+.donut-cost-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0;}
+.donut-cost-row .dcr-label{color:var(--text2);}
+.donut-cost-row .dcr-val{font-weight:700;color:var(--navy);}
+
+/* ── BILLING CARD ── */
+.billing-card{background:linear-gradient(135deg,#1a2340 0%,#243460 100%);border-radius:12px;padding:20px;color:#fff;box-shadow:var(--shadow2);}
+.billing-title{font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px;}
+.b-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.b-row:last-child{border-bottom:none;}
+.b-lbl{font-size:12px;color:#94a3b8;}
+.b-amt{font-size:13px;font-weight:600;color:#e2e8f0;}
+.b-row.subtotal .b-lbl{color:#cbd5e1;font-weight:600;}
+.b-row.subtotal .b-amt{color:#fff;}
+.b-row.grand-total{padding-top:12px;margin-top:4px;border-top:1px solid rgba(255,255,255,.15);}
+.b-row.grand-total .b-lbl{font-size:14px;font-weight:700;color:#fff;}
+.b-row.grand-total .b-amt{font-size:22px;font-weight:800;color:var(--green);}
+.billing-note{font-size:10px;color:#64748b;margin-top:10px;text-align:center;}
+
+/* ── TABLES ── */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{background:var(--border2);}
+th{text-align:left;padding:9px 10px;color:var(--text2);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none;white-space:nowrap;border-bottom:2px solid var(--border);}
+th:hover{color:var(--navy);}
+th .sort-arr{opacity:.4;margin-left:3px;font-size:9px;}
+th.sorted .sort-arr{opacity:1;}
+td{padding:9px 10px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+tbody tr:hover td{background:#f8faff;}
+tbody tr:last-child td{border-bottom:none;}
+.td-name{font-weight:600;color:var(--navy);}
+.td-sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;}
+.badge.bw{background:#f1f5f9;color:#475569;}
+.badge.col{background:#fffbeb;color:#92400e;}
+.progress-cell{display:flex;align-items:center;gap:8px;}
+.progress-bg{flex:1;background:var(--border2);border-radius:4px;height:6px;min-width:50px;}
+.progress-fill{height:6px;border-radius:4px;transition:width .4s ease;}
+.td-cost{font-weight:700;font-size:13px;color:var(--navy);white-space:nowrap;}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:800;}
+
+/* ── USER SEARCH ── */
+.table-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.table-toolbar input{border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;flex:1;min-width:160px;outline:none;transition:border .15s;}
+.table-toolbar input:focus{border-color:var(--blue);}
+.table-toolbar select{border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit;background:#fff;outline:none;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--navy);color:#fff;font-size:13px;padding:14px 20px;border-radius:12px;display:none;box-shadow:var(--shadow2);max-width:360px;line-height:1.5;}
+#toast .t-title{font-weight:700;margin-bottom:3px;color:var(--green);}
+#toast .t-sub{font-size:11px;color:var(--text3);}
+
+/* ── SECTION DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:8px 28px;}
+
+/* ── FOOTER ── */
+.dash-footer{padding:16px 28px;text-align:center;font-size:11px;color:var(--text3);border-top:1px solid var(--border);background:#fff;margin-top:20px;}
+
+@media(max-width:900px){
+  #sidebar{display:none;}
+  #main{margin-left:0!important;}
+  .chart-grid.main{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .topbar,.period-bar,.filter-bar,.kpi-grid,.chart-grid,.page-section{padding-left:14px;padding-right:14px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ UPLOAD SCREEN ══════════════ -->
+<div id="upload-screen">
+  <div class="upload-card">
+    <div class="upload-logo">
+      <div class="logo-icon">🖨️</div>
+      <div>
+        <h1>Dashboard de Impresoras <span>Lexmark</span></h1>
+      </div>
+    </div>
+    <p class="upload-sub">Carga tu archivo Excel y el dashboard se generará automáticamente con todos los filtros por año, mes y equipo.</p>
+    <div class="drop-zone" id="dropZone" style="position:relative;">
+      <!-- Input file real, cubre toda la zona — compatible con todos los navegadores -->
+      <input type="file" id="fileInput" accept=".xlsx,.xls"
+        style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;">
+      <div class="dz-icon" style="pointer-events:none;">📂</div>
+      <div id="dzLabel" style="pointer-events:none;">Arrastra tu archivo Excel aquí<br>o <strong style="color:var(--navy);text-decoration:underline;">haz clic para seleccionarlo</strong></div>
+      <div id="dzLoading" style="display:none;margin-top:10px;pointer-events:none;">
+        <div style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:#1a2340;font-weight:600;">
+          <div style="width:18px;height:18px;border:2px solid #c7d2fe;border-top-color:#1a2340;border-radius:50%;animation:spin .8s linear infinite;"></div>
+          Leyendo archivo...
+        </div>
+      </div>
+    </div>
+    <div class="sheets-grid">
+      <div class="sheet-card"><div class="sc-dot" style="background:#1a2340;"></div><div class="sc-name">Configuracion</div><div class="sc-desc">Tarifas, cuota, ISV y presupuesto</div></div>
+      <div class="sheet-card"><div class="sc-dot" style="background:#f59e0b;"></div><div class="sc-name">Departamentos</div><div class="sc-desc">Consumo por equipo</div></div>
+      <div class="sheet-card"><div class="sc-dot" style="background:#10b981;"></div><div class="sc-name">Usuarios</div><div class="sc-desc">Consumo por usuario</div></div>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+</div>
+
+<!-- ══════════════ DASHBOARD ══════════════ -->
+<div id="dashboard">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sl-icon">🖨️</div>
+      <div class="sl-text"><h2>Lexmark</h2><p>Dashboard de Impresoras</p></div>
+    </div>
+    <div class="sidebar-section">Navegación</div>
+    <div class="nav-item active" onclick="scrollTo_(0)"><span class="ni-icon">📊</span><span class="ni-label">Resumen</span></div>
+    <div class="nav-item" onclick="scrollTo_('sec-depts')"><span class="ni-icon">🖨️</span><span class="ni-label">Departamentos</span></div>
+    <div class="nav-item" onclick="scrollTo_('sec-trend')"><span class="ni-icon">📈</span><span class="ni-label">Tendencia</span></div>
+    <div class="nav-item" onclick="scrollTo_('sec-compare')"><span class="ni-icon">⚖️</span><span class="ni-label">Comparativo</span></div>
+    <div class="nav-item" onclick="scrollTo_('sec-users')"><span class="ni-icon">👥</span><span class="ni-label">Usuarios</span></div>
+    <div class="nav-item" onclick="scrollTo_('sec-billing')"><span class="ni-icon">💰</span><span class="ni-label">Facturación</span></div>
+    <div class="nav-item" onclick="scrollTo_('sec-efficiency')"><span class="ni-icon">🏆</span><span class="ni-label">Eficiencia</span></div>
+    <div class="nav-item" onclick="scrollTo_('sec-budget')"><span class="ni-icon">🎯</span><span class="ni-label">Presupuesto</span></div>
+    <div class="nav-item" id="navAlerts" onclick="scrollTo_('sec-alerts')" style="position:relative;">
+      <span class="ni-icon">🔔</span>
+      <span class="ni-label">Alertas</span>
+      <span id="sidebarAlertCount" style="display:none;position:absolute;top:6px;right:10px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;"></span>
+    </div>
+    <div class="sidebar-section">Tarifas</div>
+    <div style="padding:4px 10px 10px;">
+
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">B/N</span>
+          </div>
+          <strong id="sbRateBW" style="font-size:12px;color:#e2e8f0;font-weight:700;">$0.0095</strong>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Color</span>
+          </div>
+          <strong id="sbRateColor" style="font-size:12px;color:#f59e0b;font-weight:700;">$0.0500</strong>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#10b981;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Cuota</span>
+          </div>
+          <strong id="sbCuota" style="font-size:12px;color:#e2e8f0;font-weight:700;">$460.00</strong>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">ISV</span>
+          </div>
+          <strong id="sbISV" style="font-size:12px;color:#e2e8f0;font-weight:700;">15%</strong>
+        </div>
+
+      </div>
+      <div style="font-size:9px;color:#334155;text-align:center;margin-top:6px;letter-spacing:.3px;">por hoja impresa</div>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="btn-collapse" onclick="toggleSidebar()" id="collapseBtn">◀ Contraer</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Dashboard de Impresoras <span style="color:var(--amber);">Lexmark</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="topbar-subtitle" id="topbarSub">Cargando datos...</div>
+          <span id="persistBadge" style="display:none;font-size:10px;color:#10b981;background:#f0fdf4;border:1px solid #bbf7d0;padding:2px 8px;border-radius:20px;font-weight:600;">💾 Auto-guardado</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="live-badge"><div class="live-dot"></div>En vivo</div>
+        <div class="topbar-divider"></div>
+
+        <button class="btn-save" onclick="exportCSV()" title="Exportar datos" style="background:#475569;border:none;border-radius:8px;padding:7px 14px;font-size:12px;color:#fff;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px;">📤 CSV</button>
+        <button class="btn-save" onclick="exportPDF()" title="Exportar reporte PDF" style="background:#7c3aed;border:none;border-radius:8px;padding:7px 14px;font-size:12px;color:#fff;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px;">📄 PDF</button>
+        <button class="btn-save" onclick="saveSnapshot()" id="btnSnapshot">💾 Guardar dashboard</button>
+        <button class="btn-back" onclick="goBack()">↩ Nuevo archivo</button>
+      </div>
+    </div>
+
+    <!-- PERIOD FILTER -->
+    <!-- HYBRID FILTER BAR: Año=dropdown, Mes=chips, resto=segunda barra -->
+    <div class="unified-bar">
+      <!-- Año dropdown -->
+      <span class="uf-label">Año</span>
+      <select id="selYear" class="uf-select" onchange="setYearSel(this)">
+        <option value="all">Todos</option>
+      </select>
+
+      <div class="uf-divider"></div>
+
+      <!-- Mes chips — solo meses con datos -->
+      <span class="uf-label">Mes</span>
+      <div id="monthChips" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+
+      <div class="uf-divider"></div>
+
+      <!-- Tipo -->
+      <span class="uf-label">Tipo</span>
+      <div style="display:flex;gap:4px;">
+        <div class="uf-tchip active" data-t="all"   onclick="setType('all',this)">Todos</div>
+        <div class="uf-tchip bw"    data-t="bw"    onclick="setType('bw',this)">Solo B/N</div>
+        <div class="uf-tchip clr"   data-t="color" onclick="setType('color',this)">Solo Color</div>
+      </div>
+
+      <button class="uf-reset" onclick="resetFilters()">✕ Limpiar</button>
+      <span class="uf-badge" id="periodLabel">Todos los períodos</span>
+      <span style="font-size:11px;color:#94a3b8;background:rgba(255,255,255,.1);padding:4px 12px;border-radius:20px;white-space:nowrap;border:1px solid rgba(255,255,255,.1);" id="fInfo">—</span>
+    </div>
+
+    <!-- Segunda barra: Departamento + Modelo -->
+    <div class="filter-bar">
+      <span class="fl">Departamento</span>
+      <select id="fDept" onchange="highlightBar(this.value);applyFilters()"><option value="">Todos los equipos</option></select>
+      <span class="fl">Modelo</span>
+      <select id="fModel" onchange="applyFilters()"><option value="">Todos los modelos</option></select>
+      <button class="btn-reset" onclick="resetFilters()">✕ Limpiar filtros</button>
+      <span class="filter-count" id="fInfo2">—</span>
+    </div>
+
+    <!-- Hidden legacy -->
+    <div style="display:none;"><div id="yearChips"></div></div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card bw">
+        <div class="kpi-icon">🖤</div>
+        <div class="kpi-label">Páginas B/N</div>
+        <div class="kpi-val" id="kBW">0</div>
+        <div class="kpi-sub">impresiones monocromáticas</div>
+      </div>
+      <div class="kpi-card clr" id="kpiColorCard">
+        <div class="kpi-icon">🌈</div>
+        <div class="kpi-label">Páginas Color</div>
+        <div class="kpi-val" id="kColor">0</div>
+        <div class="kpi-sub">impresiones a color</div>
+      </div>
+      <div class="kpi-card cost">
+        <div class="kpi-icon">💵</div>
+        <div class="kpi-label">Costo por consumo</div>
+        <div class="kpi-val" id="kCost">$0</div>
+        <div class="kpi-sub">sin cuota fija ni ISV</div>
+      </div>
+      <div class="kpi-card eq">
+        <div class="kpi-icon">🖨️</div>
+        <div class="kpi-label">Equipos activos</div>
+        <div class="kpi-val" id="kEq">0</div>
+        <div class="kpi-sub" id="kEqSub">impresoras</div>
+      </div>
+      <div class="kpi-card total">
+        <div class="kpi-icon">📄</div>
+        <div class="kpi-label">Total a pagar</div>
+        <div class="kpi-val" id="kTotal">$0</div>
+        <div class="kpi-sub">con cuota fija e ISV</div>
+      </div>
+    </div>
+
+    <!-- RESUMEN EJECUTIVO -->
+    <div style="padding:16px 28px 0;">
+      <div id="execSummary" style="background:linear-gradient(135deg,#1a2340 0%,#243460 100%);border-radius:12px;padding:18px 22px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div style="font-size:26px;flex-shrink:0;margin-top:2px;">📋</div>
+          <div style="flex:1;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#475569;font-weight:700;margin-bottom:6px;">Resumen ejecutivo</div>
+            <div id="execText" style="font-size:13px;color:#cbd5e1;line-height:1.7;">Cargando análisis...</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECTION: DEPARTAMENTOS -->
+    <div id="sec-depts" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>📊 Consumo por departamento</h3></div>
+    </div>
+
+    <div class="chart-grid main" style="padding:0 28px;">
+      <!-- Barras consumo -->
+      <div class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">📊</span>Rango de consumo <span class="c-badge" id="bRange">0</span><span id="selectedDeptBadge" style="display:none;background:#3b82f6;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;cursor:pointer;" onclick="selectDeptFromChart(document.getElementById('fDept').value)">✕ <span id="selectedDeptName"></span></span></div>
+          <div class="c-tabs">
+            <button class="c-tab active" onclick="switchMetric('pages',this)">Páginas</button>
+            <button class="c-tab" onclick="switchMetric('cost',this)">Costo ($)</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:300px;"><canvas id="rangeChart"></canvas></div>
+        <!-- Leyenda manual -->
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text2);">
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--navy);display:inline-block;"></span>B/N</span>
+          <span style="display:flex;align-items:center;gap:5px;" id="rangeLegendColor"><span style="width:12px;height:12px;border-radius:3px;background:var(--amber);display:inline-block;"></span>Color</span>
+        </div>
+      </div>
+      <!-- Donut -->
+      <div class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">🍩</span>Distribución</div>
+        </div>
+        <div class="chart-wrap" style="height:180px;"><canvas id="donutChart"></canvas></div>
+        <div class="donut-legend">
+          <div class="donut-row">
+            <div class="donut-dot" style="background:var(--navy);"></div>
+            <span style="color:var(--text2);">B/N</span>
+            <strong style="margin-left:4px;" id="lBW">—</strong>
+            <span class="donut-pct" id="lBWPct">0%</span>
+          </div>
+          <div class="donut-row" id="legendColorRow">
+            <div class="donut-dot" style="background:var(--amber);"></div>
+            <span style="color:var(--text2);">Color</span>
+            <strong style="margin-left:4px;" id="lColor">—</strong>
+            <span class="donut-pct" id="lColorPct">0%</span>
+          </div>
+        </div>
+        <div class="donut-cost-section">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px;font-weight:700;">Costo por tipo</div>
+          <div class="donut-cost-row"><span class="dcr-label">B/N</span><span class="dcr-val" id="cBW">$0.00</span></div>
+          <div class="donut-cost-row" id="costColorRow"><span class="dcr-label">Color</span><span class="dcr-val" style="color:var(--amber);" id="cColor">$0.00</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top B/N + Top Color -->
+    <div class="chart-grid cols2" style="padding:16px 28px 0;">
+      <div class="c-card" id="cardTopBW">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">🏆</span>Top B/N — mayor consumo <span class="c-badge" id="bTopBW">0</span></div>
+        </div>
+        <div class="chart-wrap" style="height:240px;"><canvas id="topBWChart"></canvas></div>
+      </div>
+      <div class="c-card" id="cardTopColor">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">🎨</span>Top Color — mayor consumo <span class="c-badge" id="bTopColor">0</span></div>
+        </div>
+        <div class="chart-wrap" style="height:240px;"><canvas id="topColorChart"></canvas></div>
+        <div id="noColorMsg" class="no-data-msg" style="display:none;"><div class="nd-icon">🖤</div>Este equipo no imprime en color</div>
+      </div>
+    </div>
+
+    <!-- Tabla departamentos -->
+    <div class="chart-grid" style="padding:16px 28px 0;grid-template-columns:1fr;">
+      <div class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">📋</span>Detalle por departamento <span class="c-badge" id="bTable">0</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th onclick="sortBy('nombre')" style="min-width:160px;">Equipo <span class="sort-arr" id="arr-nombre">↕</span></th>
+              <th onclick="sortBy('bw')" style="text-align:right;min-width:100px;">Páginas B/N <span class="sort-arr" id="arr-bw">↕</span></th>
+              <th onclick="sortBy('color')" style="text-align:right;min-width:100px;">Páginas Color <span class="sort-arr" id="arr-color">↕</span></th>
+              <th onclick="sortBy('total')" class="sorted" style="min-width:140px;">Costo total <span class="sort-arr" id="arr-total">↓</span></th>
+              <th onclick="sortBy('cppag')" style="text-align:right;min-width:80px;">$/pág <span class="sort-arr" id="arr-cppag">↕</span></th>
+              <th style="min-width:100px;">Variación</th>
+              <th style="min-width:120px;">% del total</th>
+            </tr></thead>
+            <tbody id="tBody"></tbody>
+          </table>
+          <div id="noDataDep" class="no-data-msg" style="display:none;"><div class="nd-icon">🔍</div>Sin resultados para los filtros aplicados</div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- SECTION: COMPARATIVO -->
+    <div id="sec-compare" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>⚖️ Comparativo por mes y departamento</h3></div>
+    </div>
+
+    <div class="chart-grid" style="padding:0 28px;grid-template-columns:1fr;">
+      <div class="c-card">
+
+        <!-- Header -->
+        <div class="c-card-header" style="flex-wrap:wrap;gap:10px;">
+          <div class="c-card-title">
+            <span class="ct-icon">⚖️</span>
+            Comparativo de consumo
+            <span id="cmpInfo" style="font-size:11px;color:var(--text2);font-weight:400;margin-left:4px;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <span style="font-size:10px;color:var(--text3);font-weight:600;">VER:</span>
+            <div class="c-tabs" id="cmpTypeTabs">
+              <button class="c-tab active" onclick="setCmpMetric('bw',this)">B/N</button>
+              <button class="c-tab" onclick="setCmpMetric('color',this)">Color</button>
+              <button class="c-tab" onclick="setCmpMetric('total',this)">Costo ($)</button>
+            </div>
+            <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+            <span style="font-size:10px;color:var(--text3);font-weight:600;">AGRUPAR:</span>
+            <div class="c-tabs">
+              <button class="c-tab active" id="cmpGroupByMonth" onclick="setCmpGroup('month',this)">Por mes</button>
+              <button class="c-tab" id="cmpGroupByDept" onclick="setCmpGroup('dept',this)">Por equipo</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dos paneles: selector izquierda, gráfica derecha -->
+        <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start;">
+
+          <!-- Panel selector de equipos -->
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Equipos</div>
+            <div id="cmpDeptList" style="display:flex;flex-direction:column;gap:2px;"></div>
+            <div style="display:flex;gap:6px;margin-top:10px;">
+              <button onclick="cmpSelectAll()" style="flex:1;background:var(--border2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text2);">✓ Todos</button>
+              <button onclick="cmpClearAll()" style="flex:1;background:var(--border2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text2);">✕ Ninguno</button>
+            </div>
+          </div>
+
+          <!-- Gráfica -->
+          <div>
+            <div class="chart-wrap" style="height:340px;"><canvas id="compareChart"></canvas></div>
+          </div>
+
+        </div>
+
+        <!-- Insight automático -->
+        <div id="cmpInsight" style="margin-top:14px;padding:10px 14px;background:var(--border2);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--navy);display:none;"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: TENDENCIA -->
+    <div id="sec-trend" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>📈 Tendencia mensual</h3></div>
+    </div>
+
+    <div class="chart-grid" style="padding:0 28px;grid-template-columns:1fr;">
+      <div class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">📈</span><span id="trendTitle">Evolución de impresiones por mes</span></div>
+          <div class="c-tabs">
+            <button class="c-tab active" onclick="switchTrend('pages',this)">Páginas</button>
+            <button class="c-tab" onclick="switchTrend('cost',this)">Costo ($)</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:240px;"><canvas id="trendChart"></canvas></div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text2);">
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--navy);display:inline-block;"></span>B/N</span>
+          <span style="display:flex;align-items:center;gap:5px;" id="trendLegendColor"><span style="width:12px;height:12px;border-radius:3px;background:var(--amber);display:inline-block;"></span>Color</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: USUARIOS -->
+    <div id="sec-users" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>👥 Consumo por usuario</h3></div>
+    </div>
+
+    <div class="chart-grid cols2" style="padding:0 28px;">
+      <div class="c-card" id="cardUBW">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">👤</span>Top 10 usuarios — B/N</div>
+          <span style="font-size:10px;color:var(--text3);">👆 Clic en barra para ver detalle</span>
+        </div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="uBWChart" style="cursor:pointer;"></canvas></div>
+      </div>
+      <div class="c-card" id="cardUColor">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">🎨</span>Top 10 usuarios — Color</div>
+          <span style="font-size:10px;color:var(--text3);">👆 Clic en barra para ver detalle</span>
+        </div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="uColorChart" style="cursor:pointer;"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Tabla usuarios -->
+    <div class="chart-grid" style="padding:16px 28px 0;grid-template-columns:1fr;">
+      <div class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">📋</span>Detalle por usuario <span class="c-badge" id="uBadge">0</span></div>
+        </div>
+        <div id="userDeptNote" style="display:none;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;">
+          ⚠ Los datos de usuarios no están vinculados por equipo en el Excel — se muestran todos los usuarios del período seleccionado.
+        </div>
+        <div class="table-toolbar">
+          <input type="text" id="uSearch" placeholder="🔍  Buscar por nombre o correo..." oninput="renderUserTable()">
+          <select id="uTypeFilter" onchange="renderUserTable()">
+            <option value="">Todos los tipos</option>
+            <option value="bw">Solo B/N</option>
+            <option value="color">Con Color</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:32px;">#</th>
+              <th onclick="sortUsers('nombre')">Usuario <span class="sort-arr" id="ua-nombre">↕</span></th>
+              <th onclick="sortUsers('bw')" style="text-align:right;">Págs. B/N <span class="sort-arr" id="ua-bw">↕</span></th>
+              <th onclick="sortUsers('color')" style="text-align:right;">Págs. Color <span class="sort-arr" id="ua-color">↕</span></th>
+              <th onclick="sortUsers('costBW')" style="text-align:right;">Costo B/N <span class="sort-arr" id="ua-costBW">↕</span></th>
+              <th onclick="sortUsers('costColor')" style="text-align:right;">Costo Color <span class="sort-arr" id="ua-costColor">↕</span></th>
+              <th onclick="sortUsers('costTotal')" class="sorted">Costo Total <span class="sort-arr" id="ua-costTotal">↓</span></th>
+              <th>Variación</th>
+            </tr></thead>
+            <tbody id="uBody"></tbody>
+          </table>
+          <div id="noDataUsr" class="no-data-msg" style="display:none;"><div class="nd-icon">👤</div>Sin usuarios para los filtros aplicados</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: EFICIENCIA -->
+    <div id="sec-efficiency" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>🏆 Ranking de eficiencia por equipo</h3></div>
+    </div>
+    <div style="padding:0 28px;">
+      <div class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">🏆</span>Eficiencia de la flota <span style="font-size:11px;color:var(--text3);font-weight:400;margin-left:6px;">costo por página vs promedio de flota</span></div>
+          <div class="c-tabs">
+            <button class="c-tab active" onclick="setEffMetric('cppag',this)">$/página</button>
+            <button class="c-tab" onclick="setEffMetric('total',this)">Costo total</button>
+            <button class="c-tab" onclick="setEffMetric('pages',this)">Páginas</button>
+          </div>
+        </div>
+        <div id="effTable"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: PRESUPUESTO -->
+    <div id="sec-budget" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>🎯 Presupuesto mensual</h3></div>
+    </div>
+    <div style="padding:0 28px;">
+      <div class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-title"><span class="ct-icon">🎯</span>Control de presupuesto</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:var(--text2);">Presupuesto mensual:</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:13px;color:var(--text2);">$</span>
+              <input type="number" id="budgetInput" min="0" step="50" placeholder="0"
+                style="width:100px;border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:13px;font-family:inherit;color:var(--text);"
+                oninput="updateBudget()">
+            </div>
+            <span style="font-size:11px;color:var(--text3);">deja en 0 para desactivar</span>
+          </div>
+        </div>
+        <div id="budgetContent">
+          <div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">
+            Ingresa un presupuesto mensual para ver el análisis de uso
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: ALERTAS -->
+    <div id="sec-alerts" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>🔔 Alertas de consumo</h3></div>
+    </div>
+
+    <div style="padding:0 28px 0;">
+      <div id="alertsSection">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- SECTION: FACTURACION -->
+    <div id="sec-billing" class="page-section" style="margin-top:24px;">
+      <div class="section-header"><h3>💰 Facturación del período</h3></div>
+    </div>
+
+    <div class="chart-grid cols2" style="padding:0 28px;margin-bottom:0;">
+      <div class="billing-card">
+        <div class="billing-title">💰 Resumen de facturación</div>
+        <div class="b-row"><span class="b-lbl">Total B/N</span><span class="b-amt" id="bBW">$0.00</span></div>
+        <div class="b-row" id="billingColorRow"><span class="b-lbl">Total Color</span><span class="b-amt" style="color:var(--amber);" id="bColor">$0.00</span></div>
+        <div class="b-row"><span class="b-lbl" id="bFijaLabel">Cuota fija</span><span class="b-amt" id="bFija">$0.00</span></div>
+        <div class="b-row subtotal"><span class="b-lbl">Subtotal</span><span class="b-amt" id="bSub">$0.00</span></div>
+        <div class="b-row"><span class="b-lbl" id="bISVLabel">ISV</span><span class="b-amt" id="bISV">$0.00</span></div>
+        <div class="b-row grand-total"><span class="b-lbl">TOTAL A PAGAR</span><span class="b-amt" id="bTotal">$0.00</span></div>
+        <div class="billing-note" id="billingNote">—</div>
+      </div>
+      <div class="c-card" style="display:flex;flex-direction:column;justify-content:center;gap:16px;">
+        <div style="text-align:center;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:8px;">Distribución del costo</div>
+          <div class="chart-wrap" style="height:180px;"><canvas id="costBreakChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-footer">
+      Dashboard de Impresoras <strong>Lexmark</strong> · Pinehurst Manufacturing · Generado con datos del archivo Excel
+    </div>
+  <!-- PANEL DESLIZABLE DE EQUIPO -->
+  <div id="equipoPanel" style="
+    position:fixed;top:0;right:-420px;width:400px;height:100vh;
+    background:var(--card);border-left:1px solid var(--border);
+    box-shadow:-8px 0 32px rgba(0,0,0,.12);z-index:200;
+    transition:right .3s ease;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--navy);">
+      <div>
+        <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Ficha de equipo</div>
+        <div id="panelTitle" style="font-size:15px;font-weight:700;color:#fff;margin-top:2px;">—</div>
+      </div>
+      <button onclick="closePanel()" style="background:rgba(255,255,255,.1);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div id="panelContent" style="flex:1;overflow-y:auto;padding:16px 20px;"></div>
+  </div>
+  <div id="panelOverlay" onclick="closeAllPanels()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:199;"></div>
+
+  <!-- PANEL DE USUARIO -->
+  <div id="userPanel" style="
+    position:fixed;top:0;right:-480px;width:460px;height:100vh;
+    background:var(--card);border-left:1px solid var(--border);
+    box-shadow:-8px 0 32px rgba(0,0,0,.12);z-index:200;
+    transition:right .3s ease;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--navy);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="userPanelAvatar" style="width:42px;height:42px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0;"></div>
+        <div>
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;">Detalle de usuario</div>
+          <div id="userPanelName" style="font-size:15px;font-weight:700;color:#fff;"></div>
+          <div id="userPanelEmail" style="font-size:11px;color:#64748b;"></div>
+        </div>
+      </div>
+      <button onclick="closeUserPanel()" style="background:rgba(255,255,255,.1);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div id="userPanelContent" style="flex:1;overflow-y:auto;padding:16px 20px;"></div>
+  </div>
+
+  </div><!-- /main -->
+</div><!-- /dashboard -->
+
+<!-- TOAST -->
+<div id="toast">
+  <div class="t-title" id="toastTitle">✅ Dashboard guardado</div>
+  <div class="t-sub" id="toastMsg">El archivo se ha descargado correctamente.</div>
+</div>
+
+<script>
+const MESES_NOM=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+console.log('Dashboard script loaded. XLSX available:', typeof XLSX !== 'undefined', '| Chart available:', typeof Chart !== 'undefined');
+let RATE_BW=0.0095,RATE_COLOR=0.05,CUOTA=460,ISV_PCT=15;
+let cmpMetric='bw', cmpGroup='month', cmpSelectedDepts=new Set();
+let RAW_DEP=[],RAW_USR=[];
+let selYears=new Set(),selMonths=new Set();
+let typeF='all',sortKey='total',sortDir=-1,metric='pages',trendMetric='pages';
+let uSortKey='costTotal',uSortDir=-1;
+let charts={};
+let sidebarCollapsed=false;
+
+// ── Sidebar ──────────────────────────────────────────────────────────────
+function toggleSidebar(){
+  sidebarCollapsed=!sidebarCollapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed',sidebarCollapsed);
+  document.getElementById('collapseBtn').textContent=sidebarCollapsed?'▶ Expandir':'◀ Contraer';
+}
+function scrollTo_(id){ if(id===0){window.scrollTo({top:0,behavior:'smooth'});return;} const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+// ── Upload ───────────────────────────────────────────────────────────────
+const dropZone=document.getElementById('dropZone');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();dropZone.classList.add('drag');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop',e=>{
+  e.preventDefault();e.stopPropagation();
+  dropZone.classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+});
+document.getElementById('fileInput').addEventListener('change',e=>{
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+});
+function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.style.display='block';}
+
+function handleFile(file){
+  console.log('handleFile called:', file ? file.name : 'null');
+  if(!file) return;
+  document.getElementById('errorMsg').style.display='none';
+
+  const dzLabel=document.getElementById('dzLabel');
+  const dzLoad=document.getElementById('dzLoading');
+  const fi=document.getElementById('fileInput');
+  if(dzLabel) dzLabel.style.display='none';
+  if(dzLoad)  dzLoad.style.display='block';
+  if(fi) fi.style.pointerEvents='none';
+
+  const reset=()=>{
+    if(dzLabel) dzLabel.style.display='block';
+    if(dzLoad)  dzLoad.style.display='none';
+    if(fi)      fi.style.pointerEvents='';
+  };
+
+  if(!file.name.match(/\.xlsx?$/i)){
+    reset();
+    showError('El archivo debe ser Excel (.xlsx o .xls). Recibido: '+file.name);
+    return;
+  }
+
+  if(typeof XLSX==='undefined'){
+    reset();
+    showError('Error: librería XLSX no cargada. Verifica tu conexión a internet e intenta de nuevo.');
+    return;
+  }
+
+  const reader=new FileReader();
+  reader.onerror=()=>{ reset(); showError('No se pudo leer el archivo. Intenta de nuevo.'); };
+  reader.onload=e=>{
+    try{
+      console.log('FileReader loaded, parsing XLSX...');
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      console.log('Sheets found:', wb.SheetNames);
+
+      const sheetMap={};
+      wb.SheetNames.forEach(s=>sheetMap[s.trim().toLowerCase()]=s);
+      const needed=['configuracion','departamentos','usuarios'];
+      const missing=needed.filter(n=>!sheetMap[n]);
+      if(missing.length){
+        reset();
+        const nombres=missing.map(n=>n.charAt(0).toUpperCase()+n.slice(1));
+        showError('Faltan hojas: '+nombres.join(', ')+'. El archivo debe tener esas 3 hojas con esos nombres exactos.');
+        return;
+      }
+
+      const cfgSheet=wb.Sheets[sheetMap['configuracion']];
+      const depSheet=wb.Sheets[sheetMap['departamentos']];
+      const usrSheet=wb.Sheets[sheetMap['usuarios']];
+      console.log('All sheets found, calling parseAndInit...');
+      parseAndInit(wb, cfgSheet, depSheet, usrSheet);
+    }catch(err){
+      reset();
+      console.error('Error parsing file:', err);
+      showError('Error al procesar: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseAndInit(wb, cfgSheet, depSheet, usrSheet){
+  // ── Configuracion — buscar valores por etiqueta ──────────────────────────
+  cfgSheet=cfgSheet||wb.Sheets['Configuracion'];
+  const cfg=XLSX.utils.sheet_to_json(cfgSheet,{header:1,defval:''});
+  // Reset primero
+  RATE_BW=0; RATE_COLOR=0; CUOTA=0; ISV_PCT=0;
+  cfg.forEach(row=>{
+    const lbl=String(row[0]||'').toLowerCase();
+    const val=parseFloat(row[1]);
+    if(!isNaN(val) && val>0){
+      if(lbl.includes('b/n')||lbl.includes('bn')||lbl.includes('blanco')||lbl.includes('mono')) RATE_BW=val;
+      else if(lbl.includes('color')) RATE_COLOR=val;
+      else if(lbl.includes('cuota')||lbl.includes('fija')) CUOTA=val;
+      else if(lbl.includes('isv')||lbl.includes('impuesto')||lbl.includes('tax')) ISV_PCT=val;
+    }
+  });
+  // Defaults si no se encontraron
+  if(!RATE_BW)    RATE_BW    = 0.0095;
+  if(!RATE_COLOR) RATE_COLOR = 0.0500;
+  if(!CUOTA)      CUOTA      = 460;
+  if(!ISV_PCT)    ISV_PCT    = 15;
+  // Leer presupuesto del Excel si existe (buscar fila con etiqueta 'presupuesto')
+  cfg.forEach(row=>{
+    const lbl=String(row[0]||'').toLowerCase();
+    const val=parseFloat(row[1]);
+    if(!isNaN(val) && val>0 && lbl.includes('presupuesto')){
+      BUDGET=val;
+      const bi=document.getElementById('budgetInput');
+      if(bi) bi.value=val;
+    }
+  });
+
+  // ── Departamentos — detectar encabezados automáticamente ─────────────────
+  depSheet=depSheet||wb.Sheets['Departamentos'];
+  const depRows=XLSX.utils.sheet_to_json(depSheet,{header:1,defval:''});
+  RAW_DEP=[];
+
+  // Encontrar fila de encabezados — saltando filas vacías y el título
+  let depHeader=-1, depCols={};
+  for(let i=0;i<Math.min(10,depRows.length);i++){
+    const r=depRows[i];
+    // Buscar si alguna celda dice "Año", "año", "Mes", o "Departamento"
+    const hasHeader=r.some(c=>{
+      const s=String(c||'').toLowerCase().trim();
+      return s==='año'||s==='ano'||s==='mes'||s==='departamento'||s==='month'||s==='year';
+    });
+    if(hasHeader){
+      depHeader=i;
+      r.forEach((c,idx)=>{
+        if(!c) return;
+        const k=String(c).toLowerCase().trim()
+          .replace(/ +/g,'_').replace(/á/g,'a').replace(/é/g,'e')
+          .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+        depCols[k]=idx;
+      });
+      break;
+    }
+  }
+  if(depHeader<0){showError('No se encontró la fila de encabezados en "Departamentos". Verifica que tenga columnas: Año, Mes, Departamento, Impresiones B/N.');return;}
+
+  // Mapear columnas con nombres alternativos
+  const colDep=(names)=>{ for(const n of names){ for(const k of Object.keys(depCols)){ if(k.includes(n)) return depCols[k]; }} return -1; };
+  const iAno   = colDep(['ao','ano','year','a_o']);
+  const iMes   = colDep(['mes','month']);
+  const iNom   = colDep(['departamento','depto','dept','nombre_del_dep']);
+  const iMod   = colDep(['modelo','model']);
+  const iIP    = colDep(['ip']);
+  const iBN    = colDep(['b/n','bn','mono','blanco','bw','impresiones_b','_b/n','_bn']);
+  const iColor = colDep(['color','impresiones_c','_color']);
+
+  if(iAno<0||iMes<0||iNom<0||iBN<0){
+    showError('Columnas no reconocidas en "Departamentos". Asegúrate de que la plantilla tenga: Año, Mes, Departamento, Impresiones B/N, Impresiones Color.');
+    return;
+  }
+
+  for(let i=depHeader+1;i<depRows.length;i++){
+    const r=depRows[i];
+    const primerVal=String(r[0]||'');
+    if(primerVal.startsWith('←')||primerVal.startsWith('<')) break;
+    const año=parseInt(r[iAno]),mes=parseInt(r[iMes]);
+    if(!año||isNaN(año)||!mes||isNaN(mes)) continue;
+    const bw=parseFloat(r[iBN])||0;
+    const color=iColor>=0?parseFloat(r[iColor])||0:0;
+    const nombre=String(r[iNom]||'').trim();
+    const modelo=iMod>=0?String(r[iMod]||'').trim():'';
+    const ip=iIP>=0?String(r[iIP]||'').trim():'';
+    if(!nombre) continue;
+    RAW_DEP.push({año,mes,mesNom:MESES_NOM[mes]||String(mes),nombre,modelo,ip,bw,color,
+      totalBW:+(bw*RATE_BW).toFixed(4),totalColor:+(color*RATE_COLOR).toFixed(4),
+      total:+(bw*RATE_BW+color*RATE_COLOR).toFixed(4)});
+  }
+  if(!RAW_DEP.length){showError('La hoja "Departamentos" no tiene datos. Verifica que haya filas con Año y Mes válidos (números).');return;}
+
+  // ── Usuarios — detectar encabezados automáticamente ──────────────────────
+  usrSheet=usrSheet||wb.Sheets['Usuarios'];
+  const usrRows=XLSX.utils.sheet_to_json(usrSheet,{header:1,defval:''});
+  RAW_USR=[];
+
+  let usrHeader=-1, usrCols={};
+  for(let i=0;i<Math.min(10,usrRows.length);i++){
+    const r=usrRows[i];
+    const hasHeader=r.some(c=>{
+      const s=String(c||'').toLowerCase().trim();
+      return s==='año'||s==='ano'||s==='mes'||s==='usuario'||s==='user'||s==='month'||s==='year';
+    });
+    if(hasHeader){
+      usrHeader=i;
+      r.forEach((c,idx)=>{
+        if(!c) return;
+        const k=String(c).toLowerCase().trim()
+          .replace(/ +/g,'_').replace(/á/g,'a').replace(/é/g,'e')
+          .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+        usrCols[k]=idx;
+      });
+      break;
+    }
+  }
+
+  if(usrHeader>=0){
+    const colUsr=(names)=>{ for(const n of names){ for(const k of Object.keys(usrCols)){ if(k.includes(n)) return usrCols[k]; }} return -1; };
+    const uAno   = colUsr(['ao','ano','year']);
+    const uMes   = colUsr(['mes','month']);
+    const uNom   = colUsr(['usuario','user','nombre']);
+    const uEmail = colUsr(['correo','email','mail']);
+    const uBN    = colUsr(['b/n','bn','mono','blanco','bw','impresiones_b']);
+    const uColor = colUsr(['color','impresiones_c']);
+
+    for(let i=usrHeader+1;i<usrRows.length;i++){
+      const r=usrRows[i];
+      const primerVal=String(r[0]||'');
+      if(primerVal.startsWith('←')||primerVal.startsWith('<')) break;
+      const año=parseInt(r[uAno]),mes=parseInt(r[uMes]);
+      if(!año||isNaN(año)||!mes||isNaN(mes)) continue;
+      const bw=uBN>=0?parseFloat(r[uBN])||0:0;
+      const color=uColor>=0?parseFloat(r[uColor])||0:0;
+      const nombre=String(r[uNom>=0?uNom:3]||'').trim();
+      const email=String(r[uEmail>=0?uEmail:4]||'').trim();
+      if(!nombre) continue;
+      RAW_USR.push({año,mes,mesNom:MESES_NOM[mes]||String(mes),nombre,email,bw,color,
+        costBW:+(bw*RATE_BW).toFixed(4),costColor:+(color*RATE_COLOR).toFixed(4),
+        costTotal:+(bw*RATE_BW+color*RATE_COLOR).toFixed(4)});
+    }
+  }
+
+  updateSidebarRates();
+  // Resetear estado antes de buildPeriodChips para que auto-select funcione
+  selYears=new Set(['all']); selMonths=new Set(['all']);
+  buildPeriodChips();  // puede auto-seleccionar año más reciente
+  buildSelects();
+  buildCharts();
+  // Reset loading indicator
+  const dzL=document.getElementById('dzLabel');
+  const dzLd=document.getElementById('dzLoading');
+  if(dzL)  dzL.style.display='block';
+  if(dzLd) dzLd.style.display='none';
+
+  console.log('parseAndInit complete — showing dashboard');
+  showDashboard();
+  applyFilters();
+
+  // Guardar en localStorage para persistir al refrescar
+  try {
+    localStorage.setItem('lexmark_dashboard_data',
+      JSON.stringify({RATE_BW,RATE_COLOR,CUOTA,ISV_PCT,RAW_DEP,RAW_USR,savedAt:Date.now()}));
+    console.log('Datos guardados en localStorage');
+  } catch(e){ console.warn('localStorage no disponible:', e); }
+}
+
+function updateSidebarRates(){
+  document.getElementById('sbRateBW').textContent='$'+RATE_BW.toFixed(4);
+  document.getElementById('sbRateColor').textContent='$'+RATE_COLOR.toFixed(4);
+  document.getElementById('sbCuota').textContent='$'+CUOTA.toFixed(2);
+  document.getElementById('sbISV').textContent=ISV_PCT+'%';
+  document.getElementById('bISVLabel').textContent='ISV ('+ISV_PCT+'%)';
+}
+
+function buildPeriodChips(){
+  const allYears=[...new Set(RAW_DEP.map(d=>d.año))].sort();
+  const selY=document.getElementById('selYear');
+  if(selY){
+    selY.innerHTML='<option value="all">Todos</option>'
+      +allYears.map(y=>`<option value="${y}">${y}</option>`).join('');
+    // Auto-select most recent year if multiple years exist
+    if(allYears.length>1){
+      const latestYear=allYears[allYears.length-1];
+      selY.value=latestYear;
+      selYears=new Set([latestYear]);
+      selY.className='uf-select active-year';
+    }
+  }
+  rebuildMonthSel();
+}
+
+function rebuildMonthSel(){
+  const yearsActive=selYears.has('all')
+    ? [...new Set(RAW_DEP.map(d=>d.año))]
+    : [...selYears].filter(y=>y!=='all').map(Number);
+
+  const available=[...new Set(
+    RAW_DEP.filter(d=>yearsActive.includes(d.año)).map(d=>d.mes)
+  )].sort((a,b)=>a-b);
+
+  // Reset month if not available in selected year
+  if(!selMonths.has('all')){
+    const valid=[...selMonths].filter(m=>available.includes(m));
+    selMonths=valid.length?new Set(valid):new Set(['all']);
+  }
+
+  // Rebuild month chips
+  const mc=document.getElementById('monthChips');
+  if(mc){
+    const allActiveClass = selMonths.has('all') ? ' active' : '';
+    const allChipHtml = '<div class="mchip' + allActiveClass + '" data-m="all" onclick="setMonth(\'all\',this)">Todos</div>';
+    const monthChipsHtml = available.map(m => {
+      const ac = selMonths.has(m) ? ' active' : '';
+      return '<div class="mchip' + ac + '" data-m="' + m + '" onclick="setMonth(' + m + ',this)">' + MESES_NOM[m] + '</div>';
+    }).join('');
+    mc.innerHTML = allChipHtml + monthChipsHtml;
+  }
+}
+
+function rebuildMonthChips(){ rebuildMonthSel(); }
+
+
+function buildSelects(){
+  const depts=[...new Set(RAW_DEP.map(d=>d.nombre))].sort();
+  const models=[...new Set(RAW_DEP.map(d=>d.modelo))].sort();
+  document.getElementById('fDept').innerHTML='<option value="">Todos los equipos</option>'+depts.map(d=>`<option>${d}</option>`).join('');
+  document.getElementById('fModel').innerHTML='<option value="">Todos los modelos</option>'+models.map(m=>`<option>${m}</option>`).join('');
+}
+
+function goBack(){
+  showUploadScreen();
+
+  // Reset el valor del input para permitir seleccionar el mismo archivo de nuevo
+  const fi = document.getElementById('fileInput');
+  if(fi){
+    fi.value='';
+    fi.style.display=''; // asegurarse que está visible
+  }
+
+  // Reset errores y loading
+  document.getElementById('errorMsg').style.display='none';
+  document.getElementById('dzLoading').style.display='none';
+  document.getElementById('dzLabel').style.display='block';
+
+  // Reset estado global
+  typeF='all'; sortKey='total'; sortDir=-1; metric='pages'; trendMetric='pages';
+  RAW_DEP=[]; RAW_USR=[];
+  selYears=new Set(['all']); selMonths=new Set(['all']);
+
+  // Limpiar localStorage para que no vuelva a cargar los datos anteriores
+  try { localStorage.removeItem('lexmark_dashboard_data'); } catch(e){}
+}
+
+// ── Period filters ───────────────────────────────────────────────────────
+function setYear(y,el){ setYearVal(y); }
+
+function setYearSel(sel){
+  setYearVal(sel.value==='all'?'all':parseInt(sel.value));
+}
+
+function setYearVal(y){
+  selYears = y==='all' ? new Set(['all']) : new Set([y]);
+  const selEl=document.getElementById('selYear');
+  if(selEl){
+    selEl.value=y==='all'?'all':String(y);
+    selEl.className='uf-select'+(y!=='all'?' active-year':'');
+  }
+  rebuildMonthSel();
+  applyFilters();
+}
+
+function syncSelYear(){
+  const sel=document.getElementById('selYear');
+  if(!sel) return;
+  const val=selYears.has('all')?'all':[...selYears][0];
+  sel.value=String(val);
+  sel.className='uf-select'+(val!=='all'?' active-year':'');
+}
+function setMonth(m,el){
+  if(m==='all'){
+    selMonths=new Set(['all']);
+    document.querySelectorAll('.mchip').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+  } else {
+    selMonths.delete('all');
+    const allChip=document.querySelector('.mchip[data-m="all"]');
+    if(allChip) allChip.classList.remove('active');
+    if(selMonths.has(m)){ selMonths.delete(m); el.classList.remove('active'); }
+    else { selMonths.add(m); el.classList.add('active'); }
+    if(!selMonths.size){ selMonths=new Set(['all']); if(allChip) allChip.classList.add('active'); }
+  }
+  applyFilters();
+}
+function matchesPeriod(r){return(selYears.has('all')||selYears.has(r.año))&&(selMonths.has('all')||selMonths.has(r.mes));}
+function getPeriodLabel(){
+  const yAll=selYears.has('all'),mAll=selMonths.has('all');
+  const yList=[...selYears].filter(y=>y!=='all').sort().join(', ');
+  const mList=[...selMonths].filter(m=>m!=='all').sort((a,b)=>a-b).map(m=>MESES_NOM[m]).join(', ');
+  if(yAll&&mAll) return 'Todos los períodos';
+  if(yAll) return mList;
+  if(mAll) return yList;
+  return mList+' · '+yList;
+}
+
+// ── Data filters ─────────────────────────────────────────────────────────
+function getFiltered(){
+  const dept=document.getElementById('fDept').value, model=document.getElementById('fModel').value;
+  return RAW_DEP.filter(d=>{
+    if(!matchesPeriod(d)) return false;
+    if(dept&&d.nombre!==dept) return false;
+    if(model&&d.modelo!==model) return false;
+    if(typeF==='bw'&&d.color>0) return false;
+    if(typeF==='color'&&d.color===0) return false;
+    return true;
+  });
+}
+function getFilteredUsers(){
+  return RAW_USR.filter(u=>{
+    if(!matchesPeriod(u)) return false;
+    if(typeF==='bw'    && u.color>0)   return false;
+    if(typeF==='color' && u.color===0) return false;
+    return true;
+  });
+}
+
+// ── Main apply ───────────────────────────────────────────────────────────
+function applyFilters(){
+  document.getElementById('periodLabel').textContent=getPeriodLabel();
+  const f=getFiltered();
+
+  // Agrupar
+  const depMap={};
+  f.forEach(d=>{
+    const k=d.nombre+'||'+d.modelo;
+    if(!depMap[k]) depMap[k]={nombre:d.nombre,modelo:d.modelo,bw:0,color:0,totalBW:0,totalColor:0,total:0};
+    depMap[k].bw+=d.bw;depMap[k].color+=d.color;depMap[k].totalBW+=d.totalBW;depMap[k].totalColor+=d.totalColor;depMap[k].total+=d.total;
+  });
+  const deps=Object.values(depMap),n=deps.length;
+
+  const tBW=deps.reduce((s,d)=>s+d.bw,0),tColor=deps.reduce((s,d)=>s+d.color,0);
+  const tCostBW=deps.reduce((s,d)=>s+d.totalBW,0),tCostColor=deps.reduce((s,d)=>s+d.totalColor,0);
+  const tCost=tCostBW+tCostColor,tot=tBW+tColor||1;
+  const hasColor=tColor>0,hasBW=tBW>0;
+
+  const mesesUnicos=new Set(f.map(d=>d.año+'-'+d.mes)).size||1;
+  const cuotaTotal=CUOTA*mesesUnicos;
+  const subtotal=tCost+cuotaTotal;
+  const isv=subtotal*(ISV_PCT/100);
+  const totalFact=subtotal+isv;
+
+  // KPIs
+  document.getElementById('kBW').textContent=tBW.toLocaleString();
+  document.getElementById('kColor').textContent=tColor.toLocaleString();
+  document.getElementById('kCost').textContent='$'+tCost.toFixed(2);
+  document.getElementById('kEq').textContent=n;
+  document.getElementById('kEqSub').textContent=n===1?'impresora':'impresoras · '+mesesUnicos+' mes'+(mesesUnicos>1?'es':'');
+  document.getElementById('kTotal').textContent='$'+totalFact.toFixed(2);
+  document.getElementById('kpiColorCard').style.display=hasColor?'':'none';
+  const fInfoTxt=n+' equipo'+(n!==1?'s':'')+' · '+mesesUnicos+' mes'+(mesesUnicos!==1?'es':'');
+  document.getElementById('fInfo').textContent=fInfoTxt;
+  const fi2=document.getElementById('fInfo2'); if(fi2) fi2.textContent=fInfoTxt;
+
+  // Topbar subtitle
+  const dept=document.getElementById('fDept').value;
+  document.getElementById('topbarSub').textContent=dept?'Equipo: '+dept:getPeriodLabel();
+
+  // Mostrar badge si hay datos en localStorage
+  try {
+    const hasSaved = !!localStorage.getItem('lexmark_dashboard_data');
+    const badge = document.getElementById('persistBadge');
+    if(badge) badge.style.display = hasSaved ? 'inline-block' : 'none';
+  } catch(e){}
+
+  // Mostrar nota en usuarios si hay filtro de equipo activo
+  const userNote=document.getElementById('userDeptNote');
+  if(userNote) userNote.style.display=dept?'block':'none';
+
+  // Badge de equipo seleccionado en gráfica
+  const badge=document.getElementById('selectedDeptBadge');
+  const badgeName=document.getElementById('selectedDeptName');
+  if(badge){
+    if(dept){ badge.style.display='inline-block'; badgeName.textContent=dept; }
+    else     { badge.style.display='none'; }
+  }
+
+
+  // Donut
+  document.getElementById('lBW').textContent=tBW.toLocaleString()+' págs.';
+  document.getElementById('lBWPct').textContent=((tBW/tot)*100).toFixed(1)+'%';
+  document.getElementById('lColor').textContent=tColor.toLocaleString()+' págs.';
+  document.getElementById('lColorPct').textContent=((tColor/tot)*100).toFixed(1)+'%';
+  document.getElementById('cBW').textContent='$'+tCostBW.toFixed(2);
+  document.getElementById('cColor').textContent='$'+tCostColor.toFixed(2);
+  document.getElementById('legendColorRow').style.display=hasColor?'':'none';
+  document.getElementById('costColorRow').style.display=hasColor?'':'none';
+  document.getElementById('rangeLegendColor').style.display=hasColor?'':'none';
+  document.getElementById('trendLegendColor').style.display=hasColor?'':'none';
+  document.getElementById('bRange').textContent=n;
+
+  // Billing
+  document.getElementById('bBW').textContent='$'+tCostBW.toFixed(2);
+  document.getElementById('bColor').textContent='$'+tCostColor.toFixed(2);
+  document.getElementById('bFija').textContent='$'+cuotaTotal.toFixed(2);
+  document.getElementById('bFijaLabel').textContent=mesesUnicos>1?'Cuota fija (×'+mesesUnicos+')':'Cuota fija';
+  document.getElementById('bSub').textContent='$'+subtotal.toFixed(2);
+  document.getElementById('bISV').textContent='$'+isv.toFixed(2);
+  document.getElementById('bTotal').textContent='$'+totalFact.toFixed(2);
+  document.getElementById('billingColorRow').style.display=hasColor?'':'none';
+  document.getElementById('billingNote').textContent='Período: '+getPeriodLabel();
+
+  // Range chart — guard against charts not yet built
+  if(!charts.range) return;
+  const sR=[...deps].sort((a,b)=>(b.bw+b.color)-(a.bw+a.color));
+  charts.range.data.labels=sR.map(d=>d.nombre);
+  charts.range.data.datasets[0].data=metric==='pages'?sR.map(d=>d.bw):sR.map(d=>d.totalBW);
+  charts.range.data.datasets[1].data=hasColor?(metric==='pages'?sR.map(d=>d.color):sR.map(d=>d.totalColor)):sR.map(()=>0);
+  charts.range.update();
+
+  charts.donut.data.datasets[0].data=hasColor?[tBW,tColor]:[tBW,0];
+  charts.donut.update();
+
+  // Top BW
+  const tpBW=[...deps].sort((a,b)=>b.bw-a.bw).slice(0,10);
+  charts.topBW.data.labels=tpBW.map(d=>d.nombre);charts.topBW.data.datasets[0].data=tpBW.map(d=>d.bw);charts.topBW.update();
+  document.getElementById('bTopBW').textContent=tpBW.length;
+  document.getElementById('cardTopBW').style.display=hasBW?'':'none';
+
+  // Top Color
+  const tpCl=[...deps].filter(d=>d.color>0).sort((a,b)=>b.color-a.color).slice(0,10);
+  charts.topColor.data.labels=tpCl.map(d=>d.nombre);charts.topColor.data.datasets[0].data=tpCl.map(d=>d.color);charts.topColor.update();
+  document.getElementById('bTopColor').textContent=tpCl.length;
+  document.getElementById('cardTopColor').style.display='';
+  document.getElementById('noColorMsg').style.display=hasColor?'none':'block';
+  if(!hasColor){charts.topColor.data.labels=[];charts.topColor.data.datasets[0].data=[];charts.topColor.update();}
+
+  // Cost breakdown donut
+  const cbData=[tCostBW,tCostColor,cuotaTotal,isv];
+  charts.costBreak.data.datasets[0].data=cbData;
+  charts.costBreak.update();
+
+  updateTrend(f);
+  renderTable(deps);
+
+  // Resumen ejecutivo
+  updateExecSummary(deps, window._USERS_FILTERED||[], totalFact, mesesUnicos);
+
+  // Comparativo — rebuild chips si cambia el período
+  buildCmpDeptChips();
+  updateCompareChart();
+
+  // Usuarios
+  const fu=getFilteredUsers();
+  const usrMap={};
+  fu.forEach(u=>{
+    if(!usrMap[u.nombre]) usrMap[u.nombre]={nombre:u.nombre,email:u.email,bw:0,color:0,costBW:0,costColor:0,costTotal:0};
+    usrMap[u.nombre].bw+=u.bw;usrMap[u.nombre].color+=u.color;
+    usrMap[u.nombre].costBW+=u.costBW;usrMap[u.nombre].costColor+=u.costColor;usrMap[u.nombre].costTotal+=u.costTotal;
+  });
+  const usrs=Object.values(usrMap);
+  const uTopBW=[...usrs].sort((a,b)=>b.bw-a.bw).slice(0,10);
+  const uTopCl=[...usrs].filter(u=>u.color>0).sort((a,b)=>b.color-a.color).slice(0,10);
+  charts.uBW.data.labels=uTopBW.map(u=>u.nombre);charts.uBW.data.datasets[0].data=uTopBW.map(u=>u.bw);charts.uBW.update();
+  charts.uColor.data.labels=uTopCl.map(u=>u.nombre);charts.uColor.data.datasets[0].data=uTopCl.map(u=>u.color);charts.uColor.update();
+  document.getElementById('cardUBW').style.display=hasBW?'':'none';
+  document.getElementById('cardUColor').style.display=hasColor?'':'none';
+
+  window._USERS_FILTERED=usrs;
+  renderUserTable();
+}
+
+function updateTrend(filteredData){
+  if(!charts.trend) return;
+  const src=filteredData||getFiltered();
+  const periodos={};
+  src.forEach(d=>{
+    const k=d.año*100+d.mes;
+    if(!periodos[k]) periodos[k]={label:MESES_NOM[d.mes]+' '+d.año,bw:0,color:0,totalBW:0,totalColor:0};
+    periodos[k].bw+=d.bw;periodos[k].color+=d.color;periodos[k].totalBW+=d.totalBW;periodos[k].totalColor+=d.totalColor;
+  });
+  const keys=Object.keys(periodos).map(Number).sort();
+
+  // Proyección del mes siguiente
+  const proj=addTrendProjection(periodos,keys);
+  const allLabels=keys.map(k=>periodos[k].label);
+  const allBW=keys.map(k=>trendMetric==='pages'?periodos[k].bw:periodos[k].totalBW);
+  const allColor=keys.map(k=>trendMetric==='pages'?periodos[k].color:periodos[k].totalColor);
+
+  if(proj){
+    allLabels.push(proj.label);
+    allBW.push(null); // null = gap en la línea real
+    allColor.push(null);
+  }
+
+  charts.trend.data.labels=allLabels;
+  charts.trend.data.datasets[0].data=allBW;
+  charts.trend.data.datasets[1].data=allColor;
+
+  // Dataset de proyección (línea punteada)
+  if(proj){
+    const projBW=trendMetric==='pages'?proj.bw:proj.totalBW;
+    const projColor=trendMetric==='pages'?proj.color:proj.totalColor;
+    // Conectar desde el último punto real
+    const lastRealBW=keys.length?allBW[allBW.length-2]:0;
+    const lastRealColor=keys.length?allColor[allColor.length-2]:0;
+    const projDataBW=Array(keys.length).fill(null);projDataBW.push(projBW);
+    const projDataColor=Array(keys.length).fill(null);projDataColor.push(projColor);
+    // Añadir punto conector
+    projDataBW[keys.length-1]=lastRealBW||0;
+    projDataColor[keys.length-1]=lastRealColor||0;
+
+    if(charts.trend.data.datasets.length<4){
+      charts.trend.data.datasets.push({
+        label:'Proyección B/N',data:projDataBW,
+        borderColor:'#1a2340',borderDash:[6,4],borderWidth:1.5,
+        pointBackgroundColor:'#1a2340',pointRadius:[...Array(keys.length).fill(0),6],
+        fill:false,tension:0.3,backgroundColor:'transparent'
+      });
+      charts.trend.data.datasets.push({
+        label:'Proyección Color',data:projDataColor,
+        borderColor:'#f59e0b',borderDash:[6,4],borderWidth:1.5,
+        pointBackgroundColor:'#f59e0b',pointRadius:[...Array(keys.length).fill(0),6],
+        fill:false,tension:0.3,backgroundColor:'transparent'
+      });
+    } else {
+      charts.trend.data.datasets[2].data=projDataBW;
+      charts.trend.data.datasets[3].data=projDataColor;
+    }
+  } else {
+    // Quitar datasets de proyección si existen
+    if(charts.trend.data.datasets.length>2) charts.trend.data.datasets.splice(2);
+  }
+
+  charts.trend.update();
+  document.getElementById('trendTitle').textContent='Evolución '+(trendMetric==='pages'?'de impresiones':'de costos')+' por mes'+(proj?' (con proyección)':'');
+}
+
+// ── Tables ────────────────────────────────────────────────────────────────
+function renderTable(deps){
+  // Calcular variación vs período anterior para cada dept
+  const prevMap = buildPrevPeriodMap();
+  const sorted=[...deps].sort((a,b)=>{
+    if(sortKey==='cppag'){
+      const totPagA=(a.bw+a.color)||1, totPagB=(b.bw+b.color)||1;
+      return sortDir*((b.total/totPagB)-(a.total/totPagA));
+    }
+    const va=a[sortKey],vb=b[sortKey];
+    return typeof va==='string'?sortDir*va.localeCompare(vb):sortDir*(vb-va);
+  });
+  const gT=deps.reduce((s,d)=>s+d.total,0)||1,maxT=deps.length?Math.max(...deps.map(d=>d.total),1):1;
+  document.getElementById('bTable').textContent=sorted.length;
+  const noData=document.getElementById('noDataDep');
+  if(!sorted.length){document.getElementById('tBody').innerHTML='';noData.style.display='flex';return;}
+  noData.style.display='none';
+  document.getElementById('tBody').innerHTML=sorted.map(d=>{
+    const pct=((d.total/gT)*100).toFixed(1),barW=Math.round((d.total/maxT)*100);
+    const totalPags=(d.bw+d.color)||1;
+    const cppag=(d.total/totalPags).toFixed(4); // dólares por página
+    const colorCell=d.color>0?`<span style="color:var(--amber);font-weight:600;">${d.color.toLocaleString()}</span>`:'<span style="color:var(--text3);">—</span>';
+    const colorCostCell=d.color>0?`<span style="color:var(--amber);font-weight:600;">$${d.totalColor.toFixed(2)}</span>`:'<span style="color:var(--text3);">—</span>';
+    // Variación vs período anterior
+    const prev=prevMap[d.nombre];
+    let varCell='<span style="color:var(--text3);font-size:11px;">—</span>';
+    if(prev && prev>0){
+      const varPct=((d.total-prev)/prev*100);
+      const varColor=varPct>10?'#ef4444':varPct>0?'#f59e0b':'#10b981';
+      const varArrow=varPct>0?'↑':'↓';
+      varCell=`<span style="color:${varColor};font-size:11px;font-weight:700;">${varArrow} ${Math.abs(varPct).toFixed(1)}%</span>`;
+    }
+    return `<tr style="cursor:pointer;" onclick="openEquipoPanel('${d.nombre.replace(/'/g,"\'")}','${d.modelo}')">
+      <td><div class="td-name" style="color:var(--blue);">${d.nombre}</div><div class="td-sub">${d.modelo}</div></td>
+      <td style="text-align:right;font-weight:600;">${d.bw.toLocaleString()}</td>
+      <td style="text-align:right;">${colorCell}</td>
+      <td style="text-align:right;color:var(--text2);">$${d.totalBW.toFixed(2)}</td>
+      <td style="text-align:right;">${colorCostCell}</td>
+      <td>
+        <div class="progress-cell">
+          <div class="progress-bg"><div class="progress-fill" style="width:${barW}%;background:${d.color>0?'var(--amber)':'var(--navy)'};"></div></div>
+          <span class="td-cost">$${d.total.toFixed(2)}</span>
+        </div>
+      </td>
+      <td style="text-align:right;font-size:11px;color:var(--text2);">$${cppag}</td>
+      <td style="text-align:center;">${varCell}</td>
+      <td>
+        <div class="progress-cell">
+          <div class="progress-bg" style="min-width:60px;"><div class="progress-fill" style="width:${pct}%;background:#e2e8f0;"></div></div>
+          <span style="font-size:11px;color:var(--text2);min-width:36px;">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function sortBy(key){
+  if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=key==='nombre'||key==='modelo'?1:-1;}
+  ['nombre','bw','color','total','cppag'].forEach(k=>{
+    const el=document.getElementById('arr-'+k);
+    if(el) el.textContent=k===sortKey?(sortDir===1?'↑':'↓'):'↕';
+    if(el) el.parentElement.classList.toggle('sorted',k===sortKey);
+  });
+  applyFilters();
+}
+
+function sortUsers(key){
+  if(uSortKey===key) uSortDir*=-1; else{uSortKey=key;uSortDir=key==='nombre'?1:-1;}
+  ['nombre','bw','color','costBW','costColor','costTotal'].forEach(k=>{
+    const el=document.getElementById('ua-'+k);
+    if(el) el.textContent=k===uSortKey?(uSortDir===1?'↑':'↓'):'↕';
+    if(el) el.parentElement.classList.toggle('sorted',k===uSortKey);
+  });
+  renderUserTable();
+}
+
+function renderUserTable(){
+  const q=document.getElementById('uSearch').value.toLowerCase();
+  const typeU=document.getElementById('uTypeFilter').value;
+  const usrs=window._USERS_FILTERED||[];
+  let rows=usrs.filter(u=>{
+    if(q&&!u.nombre.toLowerCase().includes(q)&&!u.email.toLowerCase().includes(q)) return false;
+    if(typeU==='bw'&&u.color>0) return false;
+    if(typeU==='color'&&u.color===0) return false;
+    return true;
+  });
+  rows=[...rows].sort((a,b)=>{const va=a[uSortKey],vb=b[uSortKey];return typeof va==='string'?uSortDir*va.localeCompare(vb):uSortDir*(vb-va);});
+  const maxT=rows.length?Math.max(...rows.map(r=>r.costTotal),1):1;
+  document.getElementById('uBadge').textContent=rows.length;
+  const noData=document.getElementById('noDataUsr');
+  if(!rows.length){document.getElementById('uBody').innerHTML='';noData.style.display='flex';return;}
+  noData.style.display='none';
+  document.getElementById('uBody').innerHTML=rows.map((u,i)=>{
+    const barW=Math.round((u.costTotal/maxT)*100),rank=i+1;
+    const rBg=rank===1?'#f59e0b':rank===2?'#9ca3af':rank===3?'#cd7c2f':'var(--border2)';
+    const rTx=rank<=3?'#fff':'var(--text2)';
+    const colorCell=u.color>0?`<span style="color:var(--amber);font-weight:600;">${u.color.toLocaleString()}</span>`:'<span style="color:var(--text3);">—</span>';
+    const costColorCell=u.color>0?`<span style="color:var(--amber);font-weight:600;">$${u.costColor.toFixed(2)}</span>`:'<span style="color:var(--text3);">—</span>';
+    return `<tr style="cursor:pointer;" onclick="openUserPanel('${u.nombre.replace(/'/g,"\'")}','${u.email.replace(/'/g,"\'")}')" title="Ver detalle de ${u.nombre}">
+      <td><span class="rank-badge" style="background:${rBg};color:${rTx};">${rank}</span></td>
+      <td><div class="td-name" style="color:var(--blue);">${u.nombre}</div><div class="td-sub">${u.email}</div></td>
+      <td style="text-align:right;font-weight:600;">${u.bw.toLocaleString()}</td>
+      <td style="text-align:right;">${colorCell}</td>
+      <td style="text-align:right;color:var(--text2);">$${u.costBW.toFixed(2)}</td>
+      <td style="text-align:right;">${costColorCell}</td>
+      <td>
+        <div class="progress-cell">
+          <div class="progress-bg"><div class="progress-fill" style="width:${barW}%;background:${u.color>0?'var(--amber)':'var(--navy)'};"></div></div>
+          <span class="td-cost">$${u.costTotal.toFixed(2)}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────
+function buildCharts(){
+  if(charts.trend) Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});
+  const chartOpts=(indexAxis,stacked,cb)=>({
+    indexAxis,responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:cb}}},
+    scales:{
+      x:{stacked,grid:{color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false}},
+      y:{stacked,grid:{display:indexAxis==='y'?false:true,color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false}}
+    }
+  });
+
+  charts.trend=new Chart(document.getElementById('trendChart').getContext('2d'),{
+    type:'line',
+    data:{labels:[],datasets:[
+      {
+        label:'B/N',data:[],
+        borderColor:'#1a2340',backgroundColor:'rgba(26,35,64,0.08)',
+        borderWidth:2.5,pointRadius:5,pointHoverRadius:7,
+        pointBackgroundColor:'#fff',pointBorderColor:'#1a2340',pointBorderWidth:2,
+        fill:true,tension:0.4
+      },
+      {
+        label:'Color',data:[],
+        borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.08)',
+        borderWidth:2.5,pointRadius:5,pointHoverRadius:7,
+        pointBackgroundColor:'#fff',pointBorderColor:'#f59e0b',pointBorderWidth:2,
+        fill:true,tension:0.4
+      }
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:400},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1a2340',titleColor:'#fff',bodyColor:'#94a3b8',
+          padding:12,cornerRadius:8,
+          callbacks:{label:ctx=>` ${ctx.dataset.label}: `+(trendMetric==='pages'?ctx.raw.toLocaleString()+' págs':'$'+ctx.raw.toFixed(2))}
+        }
+      },
+      scales:{
+        x:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false}},
+        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false},beginAtZero:true}
+      }
+    }
+  });
+  charts.range=new Chart(document.getElementById('rangeChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:[],datasets:[
+      {label:'B/N',  data:[],backgroundColor:'#1a2340',borderRadius:3,hoverBackgroundColor:'#3b82f6'},
+      {label:'Color',data:[],backgroundColor:'#f59e0b',borderRadius:3,hoverBackgroundColor:'#fbbf24'}
+    ]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      cursor:'pointer',
+      onClick(evt,elements){
+        if(!elements.length) return;
+        const dept=charts.range.data.labels[elements[0].index];
+        selectDeptFromChart(dept);
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1a2340',titleColor:'#fff',bodyColor:'#94a3b8',padding:12,cornerRadius:8,
+          callbacks:{
+            title:items=>'🖨️ '+items[0].label,
+            label:ctx=>metric==='pages'?` ${ctx.dataset.label}: ${ctx.raw.toLocaleString()} págs`:` ${ctx.dataset.label}: $${ctx.raw.toFixed(2)}`,
+            afterBody:()=>['','👆 Clic para filtrar por este equipo']
+          }
+        }
+      },
+      scales:{
+        x:{stacked:true,grid:{color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false}},
+        y:{stacked:true,grid:{display:false},ticks:{font:{size:11},color:'#64748b'},border:{display:false}}
+      }
+    }
+  });
+  charts.donut=new Chart(document.getElementById('donutChart').getContext('2d'),{
+    type:'doughnut',data:{labels:['B/N','Color'],datasets:[{data:[0,0],backgroundColor:['#1a2340','#f59e0b'],borderWidth:3,borderColor:'#fff',hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'75%',animation:{duration:300},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString()} págs`}}}}
+  });
+  charts.costBreak=new Chart(document.getElementById('costBreakChart').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:['Costo B/N','Costo Color','Cuota fija','ISV'],datasets:[{data:[0,0,0,0],backgroundColor:['#1a2340','#f59e0b','#8b5cf6','#ef4444'],borderWidth:3,borderColor:'#fff',hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{duration:300},plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}},tooltip:{callbacks:{label:ctx=>` $${ctx.raw.toFixed(2)}`}}}}
+  });
+  const barOpts=color=>({
+    type:'bar',data:{labels:[],datasets:[{data:[],backgroundColor:color,borderRadius:5}]},
+    options:chartOpts('y',false,ctx=>` ${ctx.raw.toLocaleString()} págs`)
+  });
+  charts.topBW   = new Chart(document.getElementById('topBWChart').getContext('2d'),   barOpts('#1a2340'));
+  charts.topColor= new Chart(document.getElementById('topColorChart').getContext('2d'), barOpts('#f59e0b'));
+  const userBarOpts = (color) => ({
+    type:'bar', data:{labels:[],datasets:[{data:[],backgroundColor:color,borderRadius:5,hoverBackgroundColor:color==='#1a2340'?'#3b82f6':'#fbbf24'}]},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      onClick(evt,elements){
+        if(!elements.length) return;
+        const nombre=charts.uBW.data.labels[elements[0].index]||charts.uColor.data.labels[elements[0].index];
+        const usrs=window._USERS_FILTERED||[];
+        const u=usrs.find(u=>u.nombre===nombre)||usrs.find(u=>charts.uColor.data.labels[elements[0].index]===u.nombre);
+        if(u) openUserPanel(u.nombre, u.email);
+      },
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString()} págs`}}},
+      scales:{x:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false}},y:{grid:{display:false},ticks:{font:{size:11},color:'#64748b'},border:{display:false}}}
+    }
+  });
+  charts.uBW   = new Chart(document.getElementById('uBWChart').getContext('2d'),   userBarOpts('#1a2340'));
+  charts.uColor= new Chart(document.getElementById('uColorChart').getContext('2d'), userBarOpts('#f59e0b'));
+  // Fix onClick to reference correct chart
+  charts.uBW.options.onClick = function(evt,elements){
+    if(!elements.length) return;
+    const nombre=charts.uBW.data.labels[elements[0].index];
+    const u=(window._USERS_FILTERED||[]).find(u=>u.nombre===nombre);
+    if(u) openUserPanel(u.nombre, u.email);
+  };
+  charts.uColor.options.onClick = function(evt,elements){
+    if(!elements.length) return;
+    const nombre=charts.uColor.data.labels[elements[0].index];
+    const u=(window._USERS_FILTERED||[]).find(u=>u.nombre===nombre);
+    if(u) openUserPanel(u.nombre, u.email);
+  };
+
+  charts.compare = new Chart(document.getElementById('compareChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:[],datasets:[]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1a2340',titleColor:'#fff',bodyColor:'#94a3b8',
+          padding:12,cornerRadius:8,
+          callbacks:{
+            label:ctx=>{
+              const v=ctx.raw;
+              return ` ${ctx.dataset.label}: `+(cmpMetric==='total'?'$'+v.toFixed(2):v.toLocaleString()+' págs');
+            }
+          }
+        }
+      },
+      scales:{
+        x:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false}},
+        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},color:'#64748b'},border:{display:false},beginAtZero:true}
+      }
+    }
+  });
+}
+
+// ── Save snapshot ─────────────────────────────────────────────────────────
+function saveSnapshot(){
+  const btn=document.getElementById('btnSnapshot');
+  btn.disabled=true;btn.textContent='⏳ Guardando...';
+  setTimeout(()=>{
+    try{
+      const payload=JSON.stringify({RATE_BW,RATE_COLOR,CUOTA,ISV_PCT,RAW_DEP,RAW_USR});
+      // Inject BEFORE </head> so data is ready before any script runs
+      const dataScript=`<script>(function(){window.__PRELOADED__=${payload};})();<\/script>`;
+      let src=document.documentElement.outerHTML;
+      // Remove any previous embedded data to avoid duplicates
+      src=src.replace(/<script>\(function\(\)\{window\.__PRELOADED__=[\s\S]*?\}\)\(\);<\/script>/g,'');
+      const injected=src.replace('</head>',dataScript+'</head>');
+      const periodo=document.getElementById('periodLabel').textContent||'datos';
+      const fecha=new Date().toISOString().slice(0,10);
+      const filename='dashboard-lexmark-'+periodo.replace(/[^a-zA-Z0-9]/g,'-').replace(/-+/g,'-')+'-'+fecha+'.html';
+      const blob=new Blob([injected],{type:'text/html;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+      const toast=document.getElementById('toast');
+      document.getElementById('toastTitle').textContent='✅ Dashboard guardado';
+      document.getElementById('toastMsg').textContent=filename+' — ábrelo en cualquier navegador con todos los filtros activos.';
+      toast.style.display='block';setTimeout(()=>toast.style.display='none',5000);
+    }catch(err){alert('Error: '+err.message);}
+    finally{btn.disabled=false;btn.textContent='💾 Guardar dashboard';}
+  },200);
+}
+
+// ── Auto-load: restaurar datos al refrescar ──────────────────────────────
+function tryAutoLoad(){
+  // Esperar Chart.js con reintentos (máx 10 seg)
+  if(typeof Chart === 'undefined' || typeof XLSX === 'undefined'){
+    if((tryAutoLoad._attempts = (tryAutoLoad._attempts||0) + 1) < 100){
+      setTimeout(tryAutoLoad, 100);
+    } else {
+      console.warn('Chart.js o XLSX no cargaron — sin conexión a internet?');
+      showUploadFallback();
+    }
+    return;
+  }
+
+  // 1. Datos embebidos (snapshot con 💾 Guardar)
+  let d = window.__PRELOADED__ || null;
+
+  // 2. Datos del localStorage (persistencia al refrescar)
+  if(!d){
+    try {
+      const saved = localStorage.getItem('lexmark_dashboard_data');
+      if(saved) d = JSON.parse(saved);
+    } catch(e){}
+  }
+
+  // Sin datos → mostrar pantalla de carga normal
+  if(!d || !d.RAW_DEP || !d.RAW_DEP.length){
+    showUploadScreen();
+    return;
+  }
+
+  // Restaurar datos
+  RATE_BW   = d.RATE_BW   || 0.0095;
+  RATE_COLOR= d.RATE_COLOR || 0.05;
+  CUOTA     = d.CUOTA      || 460;
+  ISV_PCT   = d.ISV_PCT    || 15;
+  RAW_DEP   = d.RAW_DEP;
+  RAW_USR   = d.RAW_USR || [];
+
+  updateSidebarRates();
+  selYears=new Set(['all']); selMonths=new Set(['all']);
+  buildPeriodChips();
+  buildSelects();
+
+  try{ Object.values(charts).forEach(c=>c.destroy()); }catch(e){}
+  charts={};
+  buildCharts();
+
+  showDashboard();
+
+  setTimeout(()=>{
+    applyFilters();
+    // Si vino de snapshot, también guardarlo en localStorage
+    if(window.__PRELOADED__){
+      try {
+        localStorage.setItem('lexmark_dashboard_data',
+          JSON.stringify({RATE_BW,RATE_COLOR,CUOTA,ISV_PCT,RAW_DEP,RAW_USR,savedAt:Date.now()}));
+      } catch(e){}
+    }
+  }, 50);
+}
+
+function showDashboard(){
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  // Mostrar badge de datos persistidos
+  try{
+    const badge=document.getElementById('persistBadge');
+    if(badge && localStorage.getItem('lexmark_dashboard_data'))
+      badge.style.display='inline-block';
+  }catch(e){}
+}
+
+function showUploadScreen(){
+  document.getElementById('upload-screen').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
+}
+
+function showUploadFallback(){
+  showUploadScreen();
+  document.getElementById('errorMsg').textContent=
+    'No se pudo cargar la librería de gráficas. Verifica tu conexión a internet y recarga la página.';
+  document.getElementById('errorMsg').style.display='block';
+}
+
+// ── Seleccionar equipo desde gráfica ─────────────────────────────────────
+function selectDeptFromChart(dept){
+  const select = document.getElementById('fDept');
+  const currentVal = select.value;
+
+  // Si ya está seleccionado, deseleccionar (toggle)
+  if(currentVal === dept){
+    select.value = '';
+    showToastFilter('Filtro eliminado', 'Mostrando todos los equipos');
+  } else {
+    select.value = dept;
+    showToastFilter('🖨️ Equipo seleccionado', dept + ' — toda la información está filtrada por este equipo');
+  }
+
+  // Highlight visual en la barra seleccionada
+  highlightBar(select.value);
+  applyFilters();
+
+  // Scroll suave hacia los KPIs
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function highlightBar(selectedDept){
+  if(!charts.range || !charts.range.data.labels) return;
+  const labels = charts.range.data.labels;
+  charts.range.data.datasets.forEach((ds, dsIdx) => {
+    const baseColors = ['#1a2340','#f59e0b'];
+    const dimColors  = ['rgba(26,35,64,0.25)','rgba(245,158,11,0.25)'];
+    if(!selectedDept){
+      ds.backgroundColor = labels.map(()=>baseColors[dsIdx]);
+    } else {
+      ds.backgroundColor = labels.map(l => l===selectedDept ? baseColors[dsIdx] : dimColors[dsIdx]);
+    }
+  });
+  charts.range.update('none');
+}
+
+function showToastFilter(title, msg){
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastMsg').textContent   = msg;
+  const toast = document.getElementById('toast');
+  toast.style.display = 'block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>toast.style.display='none', 4000);
+}
+
+
+// ── COMPARATIVO ───────────────────────────────────────────────────────────
+// Paleta profesional: tonos oscuros y sobrios sobre fondo neutro
+// ── COMPARATIVO — paleta monocromática profesional ───────────────────────
+// Un solo color base (navy) con opacidades escalonadas para meses,
+// y un color de acento (amber) para el mes/dept enfocado.
+// Los departamentos se distinguen por posición, no por color.
+
+let cmpFocusDept = null; // dept enfocado al hacer hover en lista
+
+function buildCmpDeptChips(){
+  const depts = [...new Set(RAW_DEP.filter(d=>matchesPeriod(d)).map(d=>d.nombre))].sort();
+  if(cmpSelectedDepts.size===0) depts.forEach(d=>cmpSelectedDepts.add(d));
+  const container = document.getElementById('cmpDeptList');
+  if(!container) return;
+  container.innerHTML = depts.map(d=>{
+    const active = cmpSelectedDepts.has(d);
+    return `<div onclick="toggleCmpDept('${d.replace(/'/g,"\'")}',this)"
+      onmouseenter="cmpFocus('${d.replace(/'/g,"\'")}')"
+      onmouseleave="cmpBlur()"
+      data-dept="${d}"
+      style="
+        display:flex;align-items:center;gap:8px;padding:6px 10px;
+        border-radius:7px;cursor:pointer;transition:all .15s;
+        background:${active?'var(--border2)':'transparent'};
+        border:1px solid ${active?'var(--border)':'transparent'};
+        opacity:${active?'1':'0.4'};
+      ">
+      <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;
+        background:${active?'var(--navy)':'#94a3b8'};transition:background .15s;"></div>
+      <span style="font-size:11px;font-weight:${active?'600':'400'};
+        color:${active?'var(--text)':'var(--text3)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        ${d}
+      </span>
+      <div style="margin-left:auto;width:8px;height:8px;border-radius:50%;
+        background:${active?'var(--green)':'transparent'};flex-shrink:0;"></div>
+    </div>`;
+  }).join('');
+}
+
+function cmpFocus(dept){
+  cmpFocusDept=dept;
+  updateCompareChart();
+}
+function cmpBlur(){
+  cmpFocusDept=null;
+  updateCompareChart();
+}
+
+function toggleCmpDept(dept, el){
+  if(cmpSelectedDepts.has(dept)){
+    if(cmpSelectedDepts.size===1) return;
+    cmpSelectedDepts.delete(dept);
+  } else {
+    cmpSelectedDepts.add(dept);
+  }
+  buildCmpDeptChips();
+  updateCompareChart();
+
+  // Sync chart theme if dark mode is active
+}
+
+function cmpSelectAll(){
+  const depts=[...new Set(RAW_DEP.filter(d=>matchesPeriod(d)).map(d=>d.nombre))];
+  depts.forEach(d=>cmpSelectedDepts.add(d));
+  buildCmpDeptChips();
+  updateCompareChart();
+}
+
+function cmpClearAll(){
+  const depts=[...new Set(RAW_DEP.filter(d=>matchesPeriod(d)).map(d=>d.nombre))];
+  cmpSelectedDepts.clear();
+  if(depts.length) cmpSelectedDepts.add(depts[0]);
+  buildCmpDeptChips();
+  updateCompareChart();
+}
+
+function setCmpMetric(m, btn){
+  cmpMetric=m;
+  document.querySelectorAll('#cmpTypeTabs .c-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  updateCompareChart();
+}
+
+function setCmpGroup(g, btn){
+  cmpGroup=g;
+  document.getElementById('cmpGroupByMonth').classList.toggle('active', g==='month');
+  document.getElementById('cmpGroupByDept').classList.toggle('active', g==='dept');
+  updateCompareChart();
+}
+
+function updateCompareChart(){
+  if(!charts.compare) return;
+  const src    = RAW_DEP.filter(d=>matchesPeriod(d) && cmpSelectedDepts.has(d.nombre));
+  const periods= [...new Set(src.map(d=>d.año*100+d.mes))].sort();
+  const depts  = [...cmpSelectedDepts].sort();
+  const periodLabels = periods.map(p=>MESES_NOM[p%100]+' '+Math.floor(p/100));
+  const getValue = d => cmpMetric==='bw'?d.bw:cmpMetric==='color'?d.color:d.total;
+
+  // Paleta monocromática: mismo azul navy, opacidad varía por mes
+  // Mes más reciente = sólido, anteriores = más transparentes
+  const nPeriods = periods.length || 1;
+  const getMonoAlpha = (i) => {
+    // De 0.18 (más antiguo) a 0.85 (más reciente)
+    const t = nPeriods===1 ? 1 : i/(nPeriods-1);
+    return 0.18 + t*0.67;
+  };
+  const hexAlpha = (a) => Math.round(a*255).toString(16).padStart(2,'0');
+
+  let labels, datasets;
+
+  if(cmpGroup==='month'){
+    // X = meses, una barra por departamento, agrupadas
+    labels = periodLabels;
+    datasets = depts.map((dept,di)=>{
+      const isFocus = cmpFocusDept===dept;
+      const isBlurred = cmpFocusDept && !isFocus;
+      const data = periods.map((p,pi)=>{
+        const mes=p%100, año=Math.floor(p/100);
+        return src.filter(d=>d.nombre===dept&&d.mes===mes&&d.año===año).reduce((s,d)=>s+getValue(d),0);
+      });
+      // Color: enfocado=amber, normal=navy con transparencia por índice
+      const alpha = getMonoAlpha(di % Math.max(depts.length,1));
+      const bg  = isFocus ? '#f59e0b' : isBlurred ? '#1a234015' : '#1a2340'+hexAlpha(alpha);
+      const bdr = isFocus ? '#d97706' : isBlurred ? '#1a234030' : '#1a2340'+hexAlpha(Math.min(alpha+0.2,1));
+      return {label:dept, data, backgroundColor:bg, borderColor:bdr, borderWidth:isFocus?2:1, borderRadius:4};
+    });
+  } else {
+    // X = departamentos, una barra por mes
+    labels = depts;
+    datasets = periods.map((p,pi)=>{
+      const mes=p%100, año=Math.floor(p/100);
+      const label = MESES_NOM[mes]+' '+año;
+      const isLast = pi===periods.length-1;
+      const alpha  = getMonoAlpha(pi);
+      const bg  = isLast ? '#1a2340' : '#1a2340'+hexAlpha(alpha);
+      const bdr = isLast ? '#0f172a' : '#1a2340'+hexAlpha(Math.min(alpha+0.15,1));
+      const data = depts.map(dept=>{
+        return src.filter(d=>d.nombre===dept&&d.mes===mes&&d.año===año).reduce((s,d)=>s+getValue(d),0);
+      });
+      return {label, data, backgroundColor:bg, borderColor:bdr, borderWidth:1, borderRadius:4};
+    });
+  }
+
+  charts.compare.data.labels   = labels;
+  charts.compare.data.datasets = datasets;
+  charts.compare.update();
+
+  // Info
+  const metricLabel=cmpMetric==='bw'?'Páginas B/N':cmpMetric==='color'?'Páginas Color':'Costo ($)';
+  const cmpInfoEl=document.getElementById('cmpInfo'); if(cmpInfoEl) cmpInfoEl.textContent=
+    '· '+metricLabel+' · '+depts.length+' equipo'+(depts.length!==1?'s':'')+' · '+periodLabels.length+' mes'+(periodLabels.length!==1?'es':'');
+
+  // Insight automático
+  buildCmpInsight(src, depts, periods, getValue);
+}
+
+function buildCmpInsight(src, depts, periods, getValue){
+  const el=document.getElementById('cmpInsight');
+  if(!el||!depts.length||!periods.length) return;
+  // Encontrar dept con mayor variación entre primer y último mes
+  if(periods.length<2){el.style.display='none';return;}
+  const first=periods[0], last=periods[periods.length-1];
+  let maxVar=0, maxDept='', maxFrom=0, maxTo=0;
+  depts.forEach(dept=>{
+    const vFirst=src.filter(d=>d.nombre===dept&&d.año*100+d.mes===first).reduce((s,d)=>s+getValue(d),0);
+    const vLast =src.filter(d=>d.nombre===dept&&d.año*100+d.mes===last ).reduce((s,d)=>s+getValue(d),0);
+    if(vFirst>0){
+      const v=Math.abs((vLast-vFirst)/vFirst*100);
+      if(v>maxVar){maxVar=v;maxDept=dept;maxFrom=vFirst;maxTo=vLast;}
+    }
+  });
+  if(!maxDept){el.style.display='none';return;}
+  const dir=maxTo>maxFrom?'aumentó':'disminuyó';
+  const col=maxTo>maxFrom?'#ef4444':'#10b981';
+  const metricLabel=cmpMetric==='bw'?'páginas B/N':cmpMetric==='color'?'páginas color':'costo';
+  el.style.display='block';
+  el.innerHTML=`💡 <strong>${maxDept}</strong> es el equipo con mayor variación: su ${metricLabel} <span style="color:${col};font-weight:700;">${dir} un ${maxVar.toFixed(1)}%</span> entre ${MESES_NOM[first%100]} y ${MESES_NOM[last%100]}.`;
+}
+
+// ── Modo oscuro ───────────────────────────────────────────────────────────
+
+
+// ── Exportar CSV ──────────────────────────────────────────────────────────
+function exportCSV(){
+  const f=getFiltered();
+  if(!f.length){ showToastFilter('Sin datos','No hay datos para exportar con los filtros actuales'); return; }
+  const depMap={};
+  f.forEach(d=>{
+    const k=d.nombre+'||'+d.modelo;
+    if(!depMap[k]) depMap[k]={nombre:d.nombre,modelo:d.modelo,ip:d.ip,bw:0,color:0,totalBW:0,totalColor:0,total:0};
+    depMap[k].bw+=d.bw;depMap[k].color+=d.color;depMap[k].totalBW+=d.totalBW;depMap[k].totalColor+=d.totalColor;depMap[k].total+=d.total;
+  });
+  const deps=Object.values(depMap);
+  const rows=[['Departamento','Modelo','IP','Págs B/N','Págs Color','Costo B/N','Costo Color','Costo Total','$/pág']];
+  deps.sort((a,b)=>b.total-a.total).forEach(d=>{
+    const pp=(d.total/((d.bw+d.color)||1)).toFixed(4);  // dólares por página
+    rows.push([d.nombre,d.modelo,d.ip||'',d.bw,d.color,'$'+d.totalBW.toFixed(2),'$'+d.totalColor.toFixed(2),'$'+d.total.toFixed(2),'$'+pp]);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const periodo=document.getElementById('periodLabel').textContent.replace(/[^a-zA-Z0-9]/g,'-');
+  a.href=url;a.download='impresoras-'+periodo+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToastFilter('✅ CSV exportado','Archivo descargado con los datos del período seleccionado');
+}
+
+// ── Calcular período anterior para variación ──────────────────────────────
+// Solo tiene sentido comparar vs mes anterior cuando hay exactamente 1 mes seleccionado
+function buildPrevPeriodMap(){
+  if(RAW_DEP.length===0) return {};
+  const curPeriods=[...new Set(RAW_DEP.filter(d=>matchesPeriod(d)).map(d=>d.año*100+d.mes))].sort();
+  if(curPeriods.length===0) return {};
+  // Si hay más de 1 mes seleccionado, la comparación vs "mes anterior" no tiene sentido
+  // porque estaríamos comparando N meses sumados vs 1 mes
+  if(curPeriods.length>1) return {};
+  const minCur=curPeriods[0];
+  // Período anterior = exactamente 1 mes antes
+  const prevYear=minCur%100===1?Math.floor(minCur/100)-1:Math.floor(minCur/100);
+  const prevMes =minCur%100===1?12:(minCur%100)-1;
+  const prevKey =prevYear*100+prevMes;
+  const prevData=RAW_DEP.filter(d=>d.año*100+d.mes===prevKey);
+  const prevMap={};
+  prevData.forEach(d=>{
+    if(!prevMap[d.nombre]) prevMap[d.nombre]=0;
+    prevMap[d.nombre]+=d.total;
+  });
+  return prevMap;
+}
+
+// ── Resumen Ejecutivo ─────────────────────────────────────────────────────
+function updateExecSummary(deps, usrs, totalFact, mesesUnicos){
+  const execEl=document.getElementById('execText');
+  if(!execEl) return;
+  if(!deps.length){
+    execEl.textContent='Sin datos para el período seleccionado.';
+    updateAlertsSidebar([], deps, {}, true);
+    return;
+  }
+
+  const topDept   = [...deps].sort((a,b)=>b.total-a.total)[0];
+  const hasColor  = deps.some(d=>d.color>0);
+  const totalPages= deps.reduce((s,d)=>s+d.bw+d.color,0);
+  const periodo   = document.getElementById('periodLabel').textContent;
+
+  // Top usuarios
+  const topUserGeneral = usrs.length ? [...usrs].sort((a,b)=>b.costTotal-a.costTotal)[0]   : null;
+  const topUserBN      = usrs.length ? [...usrs].sort((a,b)=>b.bw-a.bw)[0]                 : null;
+  const topUserColor   = usrs.some(u=>u.color>0) ? [...usrs].filter(u=>u.color>0).sort((a,b)=>b.color-a.color)[0] : null;
+
+  // Texto resumen
+  let txt=`En <strong style="color:#f59e0b;">${periodo}</strong>, se registraron <strong style="color:#fff;">${totalPages.toLocaleString()} páginas</strong> impresas en ${deps.length} equipo${deps.length!==1?'s':''}. `;
+  txt+=`El equipo con mayor costo fue <strong style="color:#fff;">${topDept.nombre}</strong> ($${topDept.total.toFixed(2)}). `;
+
+  // Usuario top B/N
+  if(topUserBN)
+    txt+=`Mayor impresor B/N: <strong style="color:#fff;">${topUserBN.nombre}</strong> con ${topUserBN.bw.toLocaleString()} páginas. `;
+
+  // Usuario top Color (solo si hay color)
+  if(topUserColor)
+    txt+=`Mayor impresor color: <strong style="color:#f59e0b;">${topUserColor.nombre}</strong> con ${topUserColor.color.toLocaleString()} páginas. `;
+
+  if(!hasColor) txt+=`Todo el consumo fue en blanco y negro. `;
+  txt+=`Total a pagar estimado: <strong style="color:#10b981;">$${totalFact.toFixed(2)}</strong>${mesesUnicos>1?' ('+mesesUnicos+' meses)':''}.`;
+  execEl.innerHTML=txt;
+
+  // Calcular alertas — solo válidas con período específico (1 mes o 1 año)
+  const prevMap=buildPrevPeriodMap();
+  const alerts=[];
+  const mesesSeleccionados=new Set(getFiltered().map(d=>d.año+'-'+d.mes)).size;
+  const isPeriodAll = selYears.has('all') && selMonths.has('all');
+  // Desactivar si se ven más de 1 mes simultáneamente o si es "todos"
+  const alertsDisabled = isPeriodAll || mesesSeleccionados !== 1;
+
+  if(!alertsDisabled){
+    deps.forEach(d=>{
+      const prevCost=prevMap[d.nombre]||0;
+      const paginas=(d.bw+d.color);
+      const diff=d.total-prevCost;
+      const pct=prevCost>0?((d.total-prevCost)/prevCost*100):0;
+      if(pct>25 && diff>15 && paginas>300){
+        const curMin=Math.min(...getFiltered().map(x=>x.año*100+x.mes));
+        const hadColor=RAW_DEP.filter(r=>r.nombre===d.nombre && (r.año*100+r.mes)<curMin).some(r=>r.color>0);
+        const newColor=!hadColor && d.color>0;
+        alerts.push({dept:d.nombre, v:parseFloat(pct.toFixed(1)), diff, dep:d, newColor});
+      }
+    });
+    // Atípico: supera el doble de su promedio histórico de meses anteriores
+    deps.forEach(d=>{
+      if(alerts.find(a=>a.dept===d.nombre)) return;
+      const curPeriods=new Set(getFiltered().map(x=>x.año*100+x.mes));
+      const prevHistory=RAW_DEP.filter(r=>r.nombre===d.nombre&&!curPeriods.has(r.año*100+r.mes));
+      if(prevHistory.length<2) return;
+      const avgHist=prevHistory.reduce((s,r)=>s+r.total,0)/prevHistory.length;
+      if(d.total>avgHist*2 && d.total-avgHist>15 && (d.bw+d.color)>300){
+        alerts.push({dept:d.nombre, v:parseFloat(((d.total-avgHist)/avgHist*100).toFixed(1)), diff:d.total-avgHist, dep:d, vsPromedio:true});
+      }
+    });
+  }
+  alerts.sort((a,b)=>b.v-a.v);
+
+  // ── Sidebar counter + sección alertas ──
+  updateAlertsSidebar(alerts, deps, prevMap, alertsDisabled, mesesSeleccionados);
+}
+
+function updateAlertsSidebar(alerts, deps, prevMap, alertsDisabled=false, mesesSel=1){
+  // Sidebar badge counter
+  const countEl=document.getElementById('sidebarAlertCount');
+  const navEl=document.getElementById('navAlerts');
+  if(countEl){
+    if(alerts.length>0 && !alertsDisabled){
+      countEl.textContent=alerts.length;
+      countEl.style.display='block';
+      if(navEl) navEl.style.background='rgba(239,68,68,.15)';
+    } else if(alertsDisabled){
+      countEl.textContent='—';
+      countEl.style.display='block';
+      countEl.style.background='#64748b';
+      if(navEl) navEl.style.background='';
+    } else {
+      countEl.style.display='none';
+      if(navEl) navEl.style.background='';
+    }
+  }
+
+  // Sección alertas dedicada
+  const secEl=document.getElementById('alertsSection');
+  if(!secEl) return;
+
+  if(alertsDisabled){
+    const reason = (selYears.has('all')&&selMonths.has('all'))
+      ? 'Estás viendo <strong>todos los períodos sumados</strong>. Las alertas comparan un mes específico contra el anterior.'
+      : `Estás viendo <strong>${mesesSel} meses simultáneamente</strong>. Las alertas funcionan cuando seleccionas <strong>un solo mes</strong>.`;
+    secEl.innerHTML=`
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;">
+        <div style="font-size:28px;flex-shrink:0;">💡</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px;">Alertas no disponibles para este filtro</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;">${reason}</div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text2);">👆 Selecciona un <strong>año específico</strong> y un <strong>mes específico</strong> en la barra de filtros para ver las alertas.</div>
+        </div>
+      </div>
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px 18px;">
+        <div style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">🎯 Criterios de alerta</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;background:#fff;border:1px solid #bae6fd;border-radius:20px;color:#0369a1;">📈 Sube más del 25%</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;background:#fff;border:1px solid #bae6fd;border-radius:20px;color:#0369a1;">💵 Incremento mayor a $15</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;background:#fff;border:1px solid #bae6fd;border-radius:20px;color:#0369a1;">📄 Más de 300 páginas</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Criterios panel — siempre visible
+  const criteriaHTML=`
+    <div style="background:var(--border2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:14px;">🎯</span>
+        <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">Criterios de alerta</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:4px;">Una alerta se activa si cumple las 3 condiciones</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:7px;">
+          <span style="font-size:16px;">📈</span>
+          <div><div style="font-size:10px;color:var(--text3);font-weight:600;">Variación</div><div style="font-size:12px;font-weight:700;color:var(--navy);">Sube más del 25%</div></div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:7px;">
+          <span style="font-size:16px;">💵</span>
+          <div><div style="font-size:10px;color:var(--text3);font-weight:600;">Incremento mínimo</div><div style="font-size:12px;font-weight:700;color:var(--navy);">Más de $15.00</div></div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:7px;">
+          <span style="font-size:16px;">📄</span>
+          <div><div style="font-size:10px;color:var(--text3);font-weight:600;">Volumen mínimo</div><div style="font-size:12px;font-weight:700;color:var(--navy);">Más de 300 páginas</div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:20px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>
+          <span style="color:#991b1b;font-weight:600;">Crítico</span>
+          <span style="color:var(--text2);">↑ más del 80% y +$50</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:20px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#f97316;"></span>
+          <span style="color:#c2410c;font-weight:600;">Alto</span>
+          <span style="color:var(--text2);">↑ más del 40% y +$25</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:20px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span>
+          <span style="color:#92400e;font-weight:600;">Moderado</span>
+          <span style="color:var(--text2);">↑ más del 25% y +$15</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:20px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span>
+          <span style="color:#6d28d9;font-weight:600;">Atípico</span>
+          <span style="color:var(--text2);">Supera el doble del promedio histórico</span>
+        </div>
+      </div>
+    </div>`;
+
+  // Si el período es "todos" o muy amplio, mostrar aviso
+  if(alertsDisabled){
+    const mesesN = new Set(getFiltered().map(d=>d.año+'-'+d.mes)).size;
+    secEl.innerHTML=criteriaHTML+`
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;align-items:flex-start;gap:14px;">
+        <div style="font-size:28px;flex-shrink:0;">ℹ️</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px;">Alertas no disponibles para este período</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;">
+            Las alertas comparan el consumo de <strong>un período específico</strong> contra el mes anterior.<br>
+            Actualmente estás viendo <strong>${mesesN} mes${mesesN!==1?'es':''} acumulados</strong> — comparar un acumulado contra un mes no es significativo y generaría falsos positivos.<br><br>
+            <strong>Para ver alertas:</strong> selecciona un año específico o un mes concreto en el filtro de período.
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if(!alerts.length){
+    secEl.innerHTML=criteriaHTML+`
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 24px;display:flex;align-items:center;gap:14px;">
+        <div style="font-size:28px;">✅</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:3px;">Sin alertas activas</div>
+          <div style="font-size:12px;color:#15803d;">Todos los equipos cumplen los criterios de consumo normal para este período.</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  secEl.innerHTML=criteriaHTML+`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+      ${alerts.map((a,i)=>{
+        const diff=a.diff||0;
+        const severity=a.vsPromedio?
+          {label:'Atípico',   bg:'rgba(139,92,246,.1)', border:'rgba(139,92,246,.35)',badge:'#8b5cf6'}:
+          a.v>80&&diff>50 ?{label:'Crítico',  bg:'rgba(239,68,68,.1)',  border:'rgba(239,68,68,.4)', badge:'#ef4444'}:
+          a.v>40&&diff>25 ?{label:'Alto',     bg:'rgba(249,115,22,.1)',border:'rgba(249,115,22,.35)',badge:'#f97316'}:
+                           {label:'Moderado', bg:'rgba(245,158,11,.08)',border:'rgba(245,158,11,.3)',badge:'#f59e0b'};
+        const extraTag=a.newColor?'<span style="background:#ede9fe;color:#6d28d9;font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;margin-left:6px;">🎨 Nuevo uso de color</span>':'';
+        return `<div onclick="openEquipoPanel('${a.dept.replace(/'/g,"\'")}','${(a.dep.modelo||'').replace(/'/g,"\'")}');"
+          style="background:${severity.bg};border:1px solid ${severity.border};border-radius:12px;padding:16px 18px;cursor:pointer;transition:all .15s;"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'"
+          onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${severity.badge};animation:alertpulse 1.5s infinite;flex-shrink:0;"></span>
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:${severity.badge};">${severity.label}</span>
+              ${extraTag}
+            </div>
+            <span style="font-size:10px;color:var(--text3);">Ver detalle →</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:3px;">${a.dept}</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">${a.dep.modelo||''} ${a.vsPromedio?'<span style="color:#8b5cf6;font-size:10px;">· vs promedio histórico</span>':'· vs mes anterior'}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <div style="background:rgba(255,255,255,.7);border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-size:9px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;">Variación</div>
+              <div style="font-size:16px;font-weight:800;color:${severity.badge};">↑${a.v}%</div>
+            </div>
+            <div style="background:rgba(255,255,255,.7);border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-size:9px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;">Costo actual</div>
+              <div style="font-size:14px;font-weight:800;color:var(--navy);">$${(a.dep.total||0).toFixed(2)}</div>
+            </div>
+            <div style="background:rgba(255,255,255,.7);border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-size:9px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;">Incremento</div>
+              <div style="font-size:14px;font-weight:800;color:${severity.badge};">+$${diff.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── Proyección tendencia ──────────────────────────────────────────────────
+function addTrendProjection(periodos, keys){
+  if(keys.length < 2) return null;
+  // Simple promedio de los últimos 2 meses como proyección
+  const last2=keys.slice(-2);
+  const avgBW=last2.reduce((s,k)=>s+periodos[k].bw,0)/last2.length;
+  const avgColor=last2.reduce((s,k)=>s+periodos[k].color,0)/last2.length;
+  const lastKey=keys[keys.length-1];
+  const lastMes=lastKey%100, lastYear=Math.floor(lastKey/100);
+  const nextMes=lastMes===12?1:lastMes+1;
+  const nextYear=lastMes===12?lastYear+1:lastYear;
+  return {label:'Proyección '+MESES_NOM[nextMes]+' '+nextYear, bw:Math.round(avgBW), color:Math.round(avgColor),
+          totalBW:+(avgBW*RATE_BW).toFixed(2), totalColor:+(avgColor*RATE_COLOR).toFixed(2)};
+}
+
+// ── Panel deslizable de equipo ────────────────────────────────────────────
+function openEquipoPanel(nombre, modelo){
+  document.getElementById('panelTitle').textContent=nombre;
+  document.getElementById('equipoPanel').style.right='0';
+  document.getElementById('panelOverlay').style.display='block';
+
+  const ip = (RAW_DEP.find(d=>d.nombre===nombre)||{}).ip||'—';
+  const periodo = document.getElementById('periodLabel').textContent;
+
+  // ── Datos del período ACTIVO (lo que ve el dashboard ahora) ──
+  const filtData = RAW_DEP.filter(d=>d.nombre===nombre && matchesPeriod(d));
+  const filtBW    = filtData.reduce((s,d)=>s+d.bw,0);
+  const filtColor = filtData.reduce((s,d)=>s+d.color,0);
+  const filtCost  = filtData.reduce((s,d)=>s+d.total,0);
+  const filtMeses = new Set(filtData.map(d=>d.año+'-'+d.mes)).size;
+
+  // ── Historial completo (todos los meses disponibles) ──
+  const allData = RAW_DEP.filter(d=>d.nombre===nombre);
+  const periodos={};
+  allData.forEach(d=>{
+    const k=d.año*100+d.mes;
+    if(!periodos[k]) periodos[k]={label:MESES_NOM[d.mes]+' '+d.año,bw:0,color:0,total:0,esFiltrado:matchesPeriod(d)};
+    periodos[k].bw+=d.bw; periodos[k].color+=d.color; periodos[k].total+=d.total;
+  });
+  const keys=Object.keys(periodos).map(Number).sort();
+  const totalMeses=keys.length;
+  const totAllCost=allData.reduce((s,d)=>s+d.total,0);
+
+  document.getElementById('panelContent').innerHTML=`
+    <!-- Info equipo -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:var(--border2);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--text3);letter-spacing:.4px;margin-bottom:4px;">Modelo</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);">${modelo}</div>
+      </div>
+      <div style="background:var(--border2);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;text-transform:uppercase;color:var(--text3);letter-spacing:.4px;margin-bottom:4px;">IP</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);font-family:monospace;">${ip}</div>
+      </div>
+    </div>
+
+    <!-- KPIs del período ACTIVO -->
+    <div style="background:#1a2340;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">📅 Período activo:</span>
+      <span style="font-size:11px;color:#e2e8f0;font-weight:600;">${periodo}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div style="background:#f0f9ff;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;">Págs. B/N</div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy);">${filtBW.toLocaleString()}</div>
+      </div>
+      <div style="background:#fffbeb;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;">Págs. Color</div>
+        <div style="font-size:18px;font-weight:800;color:var(--amber);">${filtColor>0?filtColor.toLocaleString():'—'}</div>
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;">Costo</div>
+        <div style="font-size:18px;font-weight:800;color:var(--green);">$${filtCost.toFixed(2)}</div>
+      </div>
+    </div>
+
+    <!-- Historial completo -->
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+      Historial completo <span style="color:var(--text3);font-weight:400;">(${totalMeses} meses registrados)</span>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      ${keys.map((k,i)=>{
+        const p=periodos[k];
+        const isLast=i===keys.length-1;
+        const highlight=p.esFiltrado;
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;'
+          +(!isLast?'border-bottom:1px solid var(--border2);':'')
+          +'background:'+(highlight?'rgba(59,130,246,.08)':'')+';">'
+          +'<div style="display:flex;align-items:center;gap:6px;">'
+          +(highlight?'<span style="width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0;"></span>':'<span style="width:5px;height:5px;flex-shrink:0;"></span>')
+          +'<span style="font-size:12px;font-weight:'+(highlight?'700':'500')+';color:'+(highlight?'var(--navy)':'var(--text2)')+';">'
+          +p.label+'</span>'
+          +(highlight?'<span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:4px;font-weight:600;">activo</span>':'')
+          +'</div>'
+          +'<div style="display:flex;gap:10px;font-size:11px;">'
+          +'<span style="color:var(--text2);">B/N: <strong>'+p.bw.toLocaleString()+'</strong></span>'
+          +(p.color>0?'<span style="color:var(--amber);">Color: <strong>'+p.color.toLocaleString()+'</strong></span>':'')
+          +'<span style="color:var(--green);font-weight:700;">$'+p.total.toFixed(2)+'</span>'
+          +'</div>'
+          +'</div>';
+      }).join('')}
+    </div>
+
+    <!-- Promedio histórico -->
+    <div style="margin-top:12px;padding:10px 14px;background:var(--border2);border-radius:8px;font-size:11px;color:var(--text2);display:flex;justify-content:space-between;">
+      <span><strong>Promedio mensual histórico:</strong> ${totalMeses>0?Math.round((allData.reduce((s,d)=>s+d.bw+d.color,0))/totalMeses).toLocaleString():0} págs</span>
+      <strong style="color:var(--green);">$${totalMeses>0?(totAllCost/totalMeses).toFixed(2):0}/mes</strong>
+    </div>
+  `;
+}
+function closePanel(){
+  document.getElementById('equipoPanel').style.right='-420px';
+  document.getElementById('panelOverlay').style.display='none';
+}
+function closeUserPanel(){
+  document.getElementById('userPanel').style.right='-480px';
+  document.getElementById('panelOverlay').style.display='none';
+}
+function closeAllPanels(){
+  closePanel(); closeUserPanel();
+}
+
+// ── Panel de usuario ──────────────────────────────────────────────────────
+function openUserPanel(nombre, email){
+  const periodo = document.getElementById('periodLabel').textContent;
+
+  // ── Datos del período ACTIVO (lo que ve el dashboard ahora) ──
+  const filtData = RAW_USR.filter(u=>u.nombre===nombre && matchesPeriod(u));
+  const filtBW    = filtData.reduce((s,u)=>s+u.bw,0);
+  const filtColor = filtData.reduce((s,u)=>s+u.color,0);
+  const filtCost  = filtData.reduce((s,u)=>s+u.costTotal,0);
+  const filtPages = filtBW+filtColor||1;
+
+  // ── Datos históricos completos ──
+  const allData = RAW_USR.filter(u=>u.nombre===nombre);
+  const meses = {};
+  allData.forEach(u=>{
+    const k=u.año*100+u.mes;
+    if(!meses[k]) meses[k]={label:MESES_NOM[u.mes]+' '+u.año,bw:0,color:0,costTotal:0,esFiltrado:matchesPeriod(u)};
+    meses[k].bw+=u.bw; meses[k].color+=u.color; meses[k].costTotal+=u.costTotal;
+  });
+  const keys=Object.keys(meses).map(Number).sort();
+
+  // ── Comparación vs organización (usando período activo) ──
+  const usrsFiltered = window._USERS_FILTERED || [];
+  const totalOrg = usrsFiltered.reduce((s,u)=>s+u.costTotal,0) || 1;
+  const avgOrg   = usrsFiltered.length ? usrsFiltered.reduce((s,u)=>s+(u.bw+u.color),0)/usrsFiltered.length : 0;
+
+  const pctOrg   = ((filtCost/totalOrg)*100).toFixed(1);
+  const cppag    = (filtCost/filtPages).toFixed(4);
+  const bwPct    = ((filtBW/filtPages)*100).toFixed(0);
+  const colorPct = ((filtColor/filtPages)*100).toFixed(0);
+
+  // FIX 5 — precedencia correcta en vsAvg
+  const filtMeses = new Set(filtData.map(u=>u.año+'-'+u.mes)).size || 1;
+  const avgPerMes = filtPages / filtMeses;
+  const vsAvg     = avgOrg>0 ? ((avgPerMes-avgOrg)/avgOrg*100) : 0;
+  const vsAvgColor = vsAvg>0?'#ef4444':'#10b981';
+  const vsAvgLabel = vsAvg>0?'más':'menos';
+
+  // Variación vs mes anterior al período activo
+  const prevMapU = buildPrevUserMap();
+  const prevCostU = prevMapU[nombre]||0;
+  let varMes = prevCostU>0 ? ((filtCost-prevCostU)/prevCostU*100) : null;
+  const varColor=varMes===null?'var(--text3)':varMes>0?'#ef4444':'#10b981';
+  const varLabel=varMes===null?'—':(varMes>0?'↑ ':'↓ ')+Math.abs(varMes).toFixed(1)+'%';
+
+  // Initials
+  const initials=nombre.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+
+  // Ranking (basado en período activo)
+  const rank=([...usrsFiltered].sort((a,b)=>b.costTotal-a.costTotal).findIndex(u=>u.nombre===nombre))+1;
+  const rankLabel=rank===1?'🥇 #1 usuario activo':rank===2?'🥈 #2 usuario':rank===3?'🥉 #3 usuario':`#${rank} usuario`;
+
+  // Update header
+  document.getElementById('userPanelAvatar').textContent=initials;
+  document.getElementById('userPanelName').textContent=nombre;
+  document.getElementById('userPanelEmail').textContent=email;
+
+  // Build content
+  document.getElementById('userPanelContent').innerHTML=`
+    <!-- Ranking badge -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;">${rankLabel}</span>
+      <span style="background:${varMes===null?'var(--border2)':varMes>0?'#fee2e2':'#dcfce7'};color:${varColor};font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;">${varLabel} vs mes ant.</span>
+    </div>
+
+    <!-- Período activo badge -->
+    <div style="background:#1a2340;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:10px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">📅 Período activo:</span>
+      <span style="font-size:11px;color:#e2e8f0;font-weight:600;">${periodo}</span>
+    </div>
+
+    <!-- KPIs del período activo -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="background:var(--border2);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;">Total páginas</div>
+        <div style="font-size:20px;font-weight:800;color:var(--navy);">${filtPages.toLocaleString()}</div>
+      </div>
+      <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;">Costo</div>
+        <div style="font-size:20px;font-weight:800;color:var(--green);">$${filtCost.toFixed(2)}</div>
+      </div>
+      <div style="background:var(--border2);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;">% del total</div>
+        <div style="font-size:20px;font-weight:800;color:var(--navy);">${pctOrg}%</div>
+      </div>
+    </div>
+
+    <!-- Distribución del período activo -->
+    <div style="background:var(--border2);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Distribución de impresión</div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;">
+          <span>B/N — ${filtBW.toLocaleString()} págs.</span><span style="font-weight:700;">${bwPct}%</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:8px;">
+          <div style="width:${bwPct}%;height:8px;border-radius:4px;background:var(--navy);"></div>
+        </div>
+      </div>
+      ${filtColor>0?`<div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;">
+          <span style="color:var(--amber);">Color — ${filtColor.toLocaleString()} págs.</span><span style="font-weight:700;color:var(--amber);">${colorPct}%</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:8px;">
+          <div style="width:${colorPct}%;height:8px;border-radius:4px;background:var(--amber);"></div>
+        </div>
+      </div>`:'<div style="font-size:11px;color:var(--text3);text-align:center;padding:4px 0;">Solo imprime en B/N</div>'}
+    </div>
+
+    <!-- Comparación vs promedio organización (período activo) -->
+    <div style="background:var(--border2);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">vs promedio organización</div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
+          <span style="font-weight:600;">${nombre.split(' ')[0]}</span>
+          <span style="font-weight:700;">${Math.round(avgPerMes).toLocaleString()} págs/mes</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:8px;">
+          <div style="width:100%;height:8px;border-radius:4px;background:var(--navy);"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;">
+          <span>Promedio organización</span>
+          <span>${Math.round(avgOrg).toLocaleString()} págs/mes</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:8px;">
+          <div style="width:${Math.min(avgOrg>0?(avgOrg/Math.max(avgPerMes,1))*100:0,100).toFixed(0)}%;height:8px;border-radius:4px;background:#94a3b8;"></div>
+        </div>
+      </div>
+      <div style="font-size:11px;margin-top:8px;padding:6px 10px;background:${vsAvg>0?'#fee2e2':'#dcfce7'};border-radius:6px;color:${vsAvgColor};font-weight:600;">
+        ${Math.abs(vsAvg).toFixed(1)}% ${vsAvgLabel} que el promedio ${vsAvg>0?'⚠':'✓'}
+      </div>
+    </div>
+
+    <!-- Historial completo -->
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+      Historial completo <span style="color:var(--text3);font-weight:400;">(${keys.length} meses)</span>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;">
+      ${keys.length===0?'<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;">Sin historial disponible</div>':
+        keys.slice().reverse().map((k,i,arr)=>{
+          const m=meses[k];
+          const prevKey=arr[i+1];
+          const prev=prevKey?meses[prevKey]:null;
+          let v=null;
+          if(prev&&prev.costTotal>0) v=((m.costTotal-prev.costTotal)/prev.costTotal*100);
+          const vc=v===null?'var(--text3)':v>0?'#ef4444':'#10b981';
+          const vl=v===null?'—':(v>0?'↑ ':'↓ ')+Math.abs(v).toFixed(1)+'%';
+          const highlight=m.esFiltrado;
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;'
+            +(i<arr.length-1?'border-bottom:1px solid var(--border2);':'')
+            +'background:'+(highlight?'rgba(59,130,246,.08)':i%2===0?'var(--border2)':'var(--card)')+';">'
+            +'<div style="display:flex;align-items:center;gap:5px;min-width:110px;">'
+            +(highlight?'<span style="width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0;"></span>':'<span style="width:5px;height:5px;flex-shrink:0;"></span>')
+            +'<span style="font-size:12px;font-weight:'+(highlight?'700':'500')+';color:'+(highlight?'var(--navy)':'var(--text2)')+';">'+m.label+'</span>'
+            +(highlight?'<span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:4px;font-weight:600;">activo</span>':'')
+            +'</div>'
+            +'<span style="font-size:11px;color:var(--text2);">B/N: <strong>'+m.bw.toLocaleString()+'</strong></span>'
+            +(m.color>0?'<span style="font-size:11px;color:var(--amber);">Color: <strong>'+m.color.toLocaleString()+'</strong></span>':'')
+            +'<span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--green);">$'+m.costTotal.toFixed(2)+'</span>'
+            +'<span style="font-size:11px;font-weight:700;color:'+vc+';min-width:46px;text-align:right;">'+vl+'</span>'
+            +'</div>';
+        }).join('')
+      }
+    </div>
+
+    <!-- $/página del período activo -->
+    <div style="padding:10px 14px;background:var(--border2);border-radius:8px;font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center;">
+      <span>Costo por página (período activo)</span>
+      <strong style="color:var(--navy);font-size:14px;">$${cppag}</strong>
+    </div>
+  `;
+
+  // Show panel
+  document.getElementById('userPanel').style.right='0';
+  document.getElementById('panelOverlay').style.display='block';
+}
+
+
+// ── Variación de usuario vs período anterior ──────────────────────────────
+// Solo tiene sentido con exactamente 1 mes seleccionado (igual que departamentos)
+function buildPrevUserMap(){
+  if(RAW_USR.length===0) return {};
+  const curPeriods=[...new Set(RAW_USR.filter(u=>matchesPeriod(u)).map(u=>u.año*100+u.mes))].sort();
+  if(!curPeriods.length) return {};
+  // Si hay más de 1 mes seleccionado, no tiene sentido comparar vs mes anterior
+  if(curPeriods.length>1) return {};
+  const minCur=curPeriods[0];
+  const prevYear=minCur%100===1?Math.floor(minCur/100)-1:Math.floor(minCur/100);
+  const prevMes =minCur%100===1?12:(minCur%100)-1;
+  const prevKey =prevYear*100+prevMes;
+  const prevData=RAW_USR.filter(u=>u.año*100+u.mes===prevKey);
+  const prevMap={};
+  prevData.forEach(u=>{ if(!prevMap[u.nombre]) prevMap[u.nombre]=0; prevMap[u.nombre]+=u.costTotal; });
+  return prevMap;
+}
+
+function buildUserVar(nombre, costoActual){
+  const prevMap=buildPrevUserMap();
+  const prev=prevMap[nombre];
+  if(!prev||prev===0) return '<span style="color:var(--text3);font-size:11px;">—</span>';
+  const v=((costoActual-prev)/prev*100);
+  const color=v>10?'#ef4444':v>0?'#f59e0b':'#10b981';
+  const arrow=v>0?'↑':'↓';
+  return `<span style="color:${color};font-size:11px;font-weight:700;">${arrow} ${Math.abs(v).toFixed(1)}%</span>`;
+}
+
+
+// ── Presupuesto ───────────────────────────────────────────────────────────
+let BUDGET = 0;
+
+function updateBudget(){
+  const inp = document.getElementById('budgetInput');
+  BUDGET = parseFloat(inp.value)||0;
+  renderBudget();
+}
+
+function renderBudget(){
+  const el = document.getElementById('budgetContent');
+  if(!el) return;
+  if(BUDGET <= 0){
+    el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px;">Ingresa un presupuesto mensual para ver el análisis de uso</div>';
+    return;
+  }
+  const f = getFiltered();
+  const mesesUnicos = new Set(f.map(d=>d.año+'-'+d.mes)).size || 1;
+  const totalCost = f.reduce((s,d)=>s+d.total,0);
+  const cuotaTotal = CUOTA * mesesUnicos;
+  const subtotal = totalCost + cuotaTotal;
+  const isv = subtotal*(ISV_PCT/100);
+  const totalFact = subtotal + isv;
+  const presupuestoTotal = BUDGET * mesesUnicos;
+  const pct = Math.min((totalFact/presupuestoTotal)*100, 100);
+  const restante = presupuestoTotal - totalFact;
+  const color = pct>=100?'#ef4444':pct>=80?'#f59e0b':'#10b981';
+  const estado = pct>=100?'⚠ Presupuesto excedido':pct>=80?'⚠ Cerca del límite':'✓ Dentro del presupuesto';
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:var(--border2);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;">Presupuesto</div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy);">$${presupuestoTotal.toFixed(2)}</div>
+        <div style="font-size:10px;color:var(--text3);">${mesesUnicos>1?mesesUnicos+'×$'+BUDGET.toFixed(2):'mensual'}</div>
+      </div>
+      <div style="background:var(--border2);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;">Gastado</div>
+        <div style="font-size:18px;font-weight:800;color:${color};">$${totalFact.toFixed(2)}</div>
+        <div style="font-size:10px;color:var(--text3);">${pct.toFixed(1)}% del presupuesto</div>
+      </div>
+      <div style="background:${restante>=0?'#f0fdf4':'#fef2f2'};border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;">${restante>=0?'Disponible':'Excedido'}</div>
+        <div style="font-size:18px;font-weight:800;color:${restante>=0?'#10b981':'#ef4444'};">${restante>=0?'$'+restante.toFixed(2):'-$'+Math.abs(restante).toFixed(2)}</div>
+        <div style="font-size:10px;color:var(--text3);">para el período</div>
+      </div>
+      <div style="background:var(--border2);border-radius:10px;padding:12px;text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;">Estado</div>
+        <div style="font-size:13px;font-weight:700;color:${color};margin-top:6px;">${estado}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:6px;display:flex;justify-content:space-between;font-size:11px;color:var(--text2);">
+      <span>Uso del presupuesto</span><span style="font-weight:700;color:${color};">${pct.toFixed(1)}%</span>
+    </div>
+    <div style="background:var(--border2);border-radius:8px;height:16px;overflow:hidden;margin-bottom:16px;">
+      <div style="height:16px;border-radius:8px;background:${color};width:${pct}%;transition:width .5s ease;position:relative;">
+        ${pct>15?'<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:#fff;">'+pct.toFixed(0)+'%</span>':''}
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Consumo por equipo vs presupuesto unitario</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${(()=>{
+        const depMap={};
+        f.forEach(d=>{
+          const k=d.nombre;
+          if(!depMap[k]) depMap[k]={nombre:d.nombre,total:0};
+          depMap[k].total+=d.total;
+        });
+        const deps=Object.values(depMap).sort((a,b)=>b.total-a.total);
+        const budgetPerDept=BUDGET/Math.max(deps.length,1);
+        return deps.map(d=>{
+          const p=Math.min((d.total/budgetPerDept)*100,150);
+          const c=p>=100?'#ef4444':p>=75?'#f59e0b':'#10b981';
+          return '<div style="display:flex;align-items:center;gap:8px;">'
+            +'<span style="font-size:11px;min-width:130px;color:var(--text);">'+d.nombre+'</span>'
+            +'<div style="flex:1;background:var(--border2);border-radius:4px;height:8px;">'
+            +'<div style="width:'+Math.min(p,100)+'%;height:8px;border-radius:4px;background:'+c+';"></div></div>'
+            +'<span style="font-size:11px;font-weight:700;color:'+c+';min-width:55px;text-align:right;">$'+d.total.toFixed(2)+'</span>'
+            +'</div>';
+        }).join('');
+      })()}
+    </div>`;
+}
+
+// ── Ranking de eficiencia ─────────────────────────────────────────────────
+let effMetric = 'cppag';
+
+function setEffMetric(m, btn){
+  effMetric = m;
+  document.querySelectorAll('#sec-efficiency .c-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderEfficiency();
+}
+
+function effClick(el){
+  const name=decodeURIComponent(el.dataset.dept||'');
+  const mod=decodeURIComponent(el.dataset.mod||'');
+  if(name) openEquipoPanel(name, mod);
+}
+
+function renderEfficiency(){
+  const el = document.getElementById('effTable');
+  if(!el) return;
+  const f = getFiltered();
+  if(!f.length){ el.innerHTML='<div class="no-data-msg"><div class="nd-icon">🏆</div>Sin datos</div>'; return; }
+
+  const depMap={};
+  f.forEach(d=>{
+    const k=d.nombre;
+    if(!depMap[k]) depMap[k]={nombre:d.nombre,modelo:d.modelo,bw:0,color:0,total:0};
+    depMap[k].bw+=d.bw; depMap[k].color+=d.color; depMap[k].total+=d.total;
+  });
+  const deps=Object.values(depMap);
+  const avgCppag = deps.reduce((s,d)=>s+(d.total/Math.max(d.bw+d.color,1)),0)/Math.max(deps.length,1);
+  const avgTotal = deps.reduce((s,d)=>s+d.total,0)/Math.max(deps.length,1);
+  const avgPages = deps.reduce((s,d)=>s+d.bw+d.color,0)/Math.max(deps.length,1);
+
+  const getVal = d => {
+    if(effMetric==='cppag') return d.total/Math.max(d.bw+d.color,1);
+    if(effMetric==='total') return d.total;
+    return d.bw+d.color;
+  };
+  const getAvg = () => effMetric==='cppag'?avgCppag:effMetric==='total'?avgTotal:avgPages;
+  const fmt = v => effMetric==='pages'?v.toLocaleString()+' págs':'$'+v.toFixed(effMetric==='cppag'?4:2);
+
+  const sorted = [...deps].sort((a,b)=>getVal(a)-getVal(b)); // menor es mejor para cppag y total
+  const maxVal = Math.max(...sorted.map(d=>getVal(d)),1);
+  const avg = getAvg();
+
+  el.innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 14px;font-size:12px;">
+        <span style="color:var(--text2);">Promedio flota:</span>
+        <strong style="color:#166534;margin-left:6px;">${fmt(avg)}</strong>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:12px;">
+        <span style="color:var(--text2);">Más eficiente:</span>
+        <strong style="color:#1e40af;margin-left:6px;">${sorted[0]?.nombre||'—'}</strong>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 14px;font-size:12px;">
+        <span style="color:var(--text2);">Menos eficiente:</span>
+        <strong style="color:#991b1b;margin-left:6px;">${sorted[sorted.length-1]?.nombre||'—'}</strong>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${sorted.map((d,i)=>{
+        const val=getVal(d);
+        const barW=Math.round((val/maxVal)*100);
+        const vsAvg=((val-avg)/avg*100);
+        const isBetter=vsAvg<=0;
+        const rankColor=i===0?'#10b981':i===sorted.length-1?'#ef4444':'var(--text2)';
+        const vsColor=isBetter?'#10b981':'#ef4444';
+        const vsLabel=(isBetter?'↓ ':'↑ ')+Math.abs(vsAvg).toFixed(1)+'% vs promedio';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--border2);border-radius:10px;cursor:pointer;" data-dept="'+encodeURIComponent(d.nombre)+'" data-mod="'+encodeURIComponent(d.modelo)+'" onclick="effClick(this)">'
+          +'<span style="font-size:16px;font-weight:800;color:'+rankColor+';min-width:24px;text-align:center;">'+(i+1)+'</span>'
+          +'<div style="flex:1;">'
+          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
+          +'<span style="font-size:12px;font-weight:600;color:var(--text);">'+d.nombre+'</span>'
+          +'<div style="display:flex;gap:8px;align-items:center;">'
+          +'<span style="font-size:10px;font-weight:600;color:'+vsColor+';">'+vsLabel+'</span>'
+          +'<span style="font-size:13px;font-weight:800;color:var(--navy);">'+fmt(val)+'</span>'
+          +'</div></div>'
+          +'<div style="background:var(--border);border-radius:4px;height:7px;">'
+          +'<div style="width:'+barW+'%;height:7px;border-radius:4px;background:'+(isBetter?'#10b981':'#ef4444')+';transition:width .4s;"></div></div>'
+          +'<div style="font-size:10px;color:var(--text3);margin-top:2px;">'+d.modelo+' · '+(d.bw+d.color).toLocaleString()+' págs · $'+d.total.toFixed(2)+'</div>'
+          +'</div></div>';
+      }).join('')}
+    </div>`;
+}
+
+// ── Exportar PDF ──────────────────────────────────────────────────────────
+function exportPDF(){
+  const periodo = document.getElementById('periodLabel').textContent;
+  const fecha = new Date().toLocaleDateString('es-HN');
+
+  // Recopilar datos
+  const f = getFiltered();
+  const depMap={};
+  f.forEach(d=>{
+    const k=d.nombre;
+    if(!depMap[k]) depMap[k]={nombre:d.nombre,modelo:d.modelo,bw:0,color:0,totalBW:0,totalColor:0,total:0};
+    depMap[k].bw+=d.bw; depMap[k].color+=d.color;
+    depMap[k].totalBW+=d.totalBW; depMap[k].totalColor+=d.totalColor; depMap[k].total+=d.total;
+  });
+  const deps=Object.values(depMap).sort((a,b)=>b.total-a.total);
+  const tBW=deps.reduce((s,d)=>s+d.bw,0);
+  const tColor=deps.reduce((s,d)=>s+d.color,0);
+  const tCost=deps.reduce((s,d)=>s+d.total,0);
+  const mesesUnicos=new Set(f.map(d=>d.año+'-'+d.mes)).size||1;
+  const cuota=CUOTA*mesesUnicos;
+  const subtotal=tCost+cuota;
+  const isv=subtotal*(ISV_PCT/100);
+  const total=subtotal+isv;
+
+  const topDept=deps[0]||{nombre:'—',total:0};
+  const usrs=window._USERS_FILTERED||[];
+  const topUser=usrs.length?[...usrs].sort((a,b)=>b.costTotal-a.costTotal)[0]:null;
+
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Reporte Impresoras ${periodo}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;color:#1e293b;padding:32px;font-size:12px;}
+    .header{background:#1a2340;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:20px;}
+    .header h1{font-size:18px;font-weight:700;}
+    .header p{font-size:11px;color:#94a3b8;margin-top:4px;}
+    .exec{background:#f8faff;border:1px solid #dbeafe;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:12px;line-height:1.7;color:#334155;}
+    .kpi-row{display:flex;gap:12px;margin-bottom:20px;}
+    .kpi{flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;}
+    .kpi label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;display:block;margin-bottom:4px;}
+    .kpi .v{font-size:20px;font-weight:800;color:#1a2340;}
+    table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:11px;}
+    th{background:#1a2340;color:#fff;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px;}
+    td{padding:7px 10px;border-bottom:1px solid #f1f5f9;}
+    tr:nth-child(even) td{background:#f8fafc;}
+    .billing{background:#1a2340;color:#fff;border-radius:8px;padding:16px 20px;margin-bottom:20px;}
+    .billing h2{font-size:13px;margin-bottom:12px;color:#e2e8f0;}
+    .b-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px;}
+    .b-row.total{border:none;padding-top:10px;}
+    .b-row .lbl{color:#94a3b8;}
+    .b-row.total .lbl{color:#fff;font-weight:700;font-size:14px;}
+    .b-row.total .amt{color:#10b981;font-weight:800;font-size:20px;}
+    .footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;}
+    @media print{body{padding:16px;} @page{margin:1.5cm;}}
+  </style></head><body>
+  <div class="header">
+    <h1>Reporte de Impresoras Lexmark — Pinehurst Manufacturing</h1>
+    <p>Período: ${periodo} · Generado el ${fecha}</p>
+  </div>
+  <div class="exec">
+    <strong>Resumen ejecutivo:</strong> En ${periodo}, se registraron <strong>${(tBW+tColor).toLocaleString()} páginas</strong> impresas en ${deps.length} equipos.
+    El equipo con mayor costo fue <strong>${topDept.nombre}</strong> ($${topDept.total.toFixed(2)}).
+    ${topUser?'El usuario más activo fue <strong>'+topUser.nombre+'</strong> con '+(topUser.bw+topUser.color).toLocaleString()+' páginas.':''}
+    El total a pagar estimado es <strong>$${total.toFixed(2)}</strong>.
+  </div>
+  <div class="kpi-row">
+    <div class="kpi"><label>Páginas B/N</label><div class="v">${tBW.toLocaleString()}</div></div>
+    <div class="kpi"><label>Páginas Color</label><div class="v">${tColor.toLocaleString()}</div></div>
+    <div class="kpi"><label>Costo consumo</label><div class="v">$${tCost.toFixed(2)}</div></div>
+    <div class="kpi"><label>Total a pagar</label><div class="v">$${total.toFixed(2)}</div></div>
+    <div class="kpi"><label>Equipos activos</label><div class="v">${deps.length}</div></div>
+  </div>
+  <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1a2340;margin-bottom:10px;">Detalle por departamento</h3>
+  <table>
+    <tr><th>Departamento</th><th>Modelo</th><th style="text-align:right;">Págs B/N</th><th style="text-align:right;">Págs Color</th><th style="text-align:right;">Costo B/N</th><th style="text-align:right;">Costo Color</th><th style="text-align:right;">$/Pág</th><th style="text-align:right;">Total</th></tr>
+    ${deps.map(d=>`<tr><td><strong>${d.nombre}</strong></td><td style="color:#64748b;">${d.modelo}</td><td style="text-align:right;">${d.bw.toLocaleString()}</td><td style="text-align:right;color:#b45309;">${d.color>0?d.color.toLocaleString():'—'}</td><td style="text-align:right;">$${d.totalBW.toFixed(2)}</td><td style="text-align:right;color:#b45309;">${d.color>0?'$'+d.totalColor.toFixed(2):'—'}</td><td style="text-align:right;">${(d.total/Math.max(d.bw+d.color,1)).toFixed(4)}</td><td style="text-align:right;font-weight:700;">$${d.total.toFixed(2)}</td></tr>`).join('')}
+  </table>
+  <div class="billing">
+    <h2>💰 Facturación del período</h2>
+    <div class="b-row"><span class="lbl">Total B/N</span><span>$${tCost.toFixed(2)}</span></div>
+    <div class="b-row"><span class="lbl">Cuota fija${mesesUnicos>1?' (×'+mesesUnicos+')':''}</span><span>$${cuota.toFixed(2)}</span></div>
+    <div class="b-row"><span class="lbl">Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+    <div class="b-row"><span class="lbl">ISV (${ISV_PCT}%)</span><span>$${isv.toFixed(2)}</span></div>
+    <div class="b-row total"><span class="lbl">TOTAL A PAGAR</span><span class="amt">$${total.toFixed(2)}</span></div>
+  </div>
+  <div class="footer">Dashboard de Impresoras Lexmark · Pinehurst Manufacturing · ${fecha}</div>
+  </body></html>`;
+
+  const win=window.open('','_blank','width=900,height=700');
+  if(!win){ showToastFilter('⚠ Bloqueado','Permite ventanas emergentes para exportar el PDF'); return; }
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.print(), 500);
+  showToastFilter('📄 Reporte listo','Se abrió en una nueva ventana — usa Ctrl+P o Cmd+P para guardar como PDF');
+}
+
+
+function setType(t,el){
+  typeF=t;
+  document.querySelectorAll('.uf-tchip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+function switchMetric(m,btn){metric=m;document.querySelectorAll('.c-tabs .c-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');applyFilters();}
+function switchTrend(m,btn){trendMetric=m;document.querySelectorAll('.c-tabs .c-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');updateTrend();}
+function resetFilters(){
+  document.getElementById('fDept').value='';
+  document.getElementById('fModel').value='';
+  typeF='all';
+  selYears=new Set(['all']); selMonths=new Set(['all']);
+  document.querySelectorAll('.uf-tchip').forEach(c=>c.classList.remove('active'));
+  const allTchip=document.querySelector('.uf-tchip[data-t="all"]');
+  if(allTchip) allTchip.classList.add('active');
+  // Reset year select
+  const selY=document.getElementById('selYear');
+  if(selY){ selY.value='all'; selY.className='uf-select'; }
+  // Reset month chips
+  document.querySelectorAll('.mchip').forEach(c=>c.classList.remove('active'));
+  const allMchip=document.querySelector('.mchip[data-m="all"]');
+  if(allMchip) allMchip.classList.add('active');
+  highlightBar('');
+  applyFilters();
+}
+
+// Use window.onload to ensure Chart.js and all scripts are fully loaded
+window.addEventListener('load', tryAutoLoad);
+</script>
+</body>
+</html>
